@@ -3,10 +3,23 @@ import json
 from .common import *
 
 
+def ramp(x, z0):
+    """15-step lamp staircase rising toward the console. Dust climbs one block per step and loses one
+    level per step, so the number of lit steps equals the neuron's activation (0-15)."""
+    # Each dust step also powers the next step's block (it points into it), so step 0 is a plain block and
+    # lamps occupy steps 1..15: activation s lights exactly lamps 1..s.
+    out = [f"setblock {x} {L0} {z0} polished_blackstone"]
+    for k in range(1, 16):
+        out.append(f"setblock {x} {L0 + k} {z0 - k} redstone_lamp")
+    for k in range(15):
+        out.append(f"setblock {x} {L1 + k} {z0 - k} redstone_wire")
+    return out
+
+
 def console(cx, R, colors):
     REGION_COLOR.update(colors)
     """Blocks + labels for zone A and the neural processor bars (zone B)."""
-    C = [f"fill -18 {DESK} -82 34 {L1+3} -26 air"]
+    C = [f"fill -18 {DESK} -82 34 {L1+20} -26 air"]
     N = len(R)
     J = N + len(PAIRS)
     hx = [cx[r] for r in R] + [4 * m + 2 for m in range(len(PAIRS))]
@@ -14,13 +27,13 @@ def console(cx, R, colors):
     for x in [cx[r] for r in R]:
         C += [f"setblock {x} {L1} -28 barrel[facing=up]", f"setblock {x} {L0} -29 polished_blackstone",
               f"setblock {x} {L1} -29 comparator[facing=south]",
-              f"fill {x} {L0} -44 {x} {L0} -30 redstone_lamp", f"fill {x} {L1} -44 {x} {L1} -30 redstone_wire",
+              *ramp(x, -30),
               f"setblock {x} {L0} -46 polished_blackstone", f"setblock {x} {L1} -46 lever[face=floor,facing=north]",
               f"setblock {x} {L1} -47 redstone_lamp"]
     for x in hx:
         C += [f"setblock {x} {L1} -48 barrel[facing=up]", f"setblock {x} {L0} -49 polished_blackstone",
               f"setblock {x} {L1} -49 comparator[facing=south]",
-              f"fill {x} {L0} -64 {x} {L0} -50 redstone_lamp", f"fill {x} {L1} -64 {x} {L1} -50 redstone_wire"]
+              *ramp(x, -50)]
     # desks
     C += [f"fill -16 {DESK} {CZ} 32 {DESK} {CZ} polished_deepslate",
           f"fill 0 {DESK} {TZ} 30 {DESK} {TZ - 1} polished_deepslate",
