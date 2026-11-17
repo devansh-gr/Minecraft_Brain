@@ -6,7 +6,7 @@ from . import barrels, persist, parser, network, pipeline, inject, memory, plast
 from .console import console, labels
 
 
-def emit(w, REGIONS, col, feeds, lc, kw):
+def emit(w, REGIONS, col, feeds, lc, kw, feed_y):
     R = [reg[0] for reg in REGIONS]
     N = len(R)
     J = N + len(PAIRS)
@@ -41,7 +41,7 @@ def emit(w, REGIONS, col, feeds, lc, kw):
                 f"data modify storage brain:a x set value {x}", f"data modify storage brain:a y set value {y}",
                 f"data modify storage brain:a z set value {z}", "function brain:fill/by with storage brain:a"]
 
-    c = SimpleNamespace(w=w, R=R, N=N, J=J, ri=ri, cx=cx, hx=hx, hname=hname, W=W, V=V, feeds=feeds, col=col, lc=lc, kw=kw, lever_region=lever_region, lever_syn=lever_syn, lever_axon=lever_axon, lever=lever, lamp=lamp, status=status, bar=bar)
+    c = SimpleNamespace(w=w, R=R, N=N, J=J, ri=ri, cx=cx, hx=hx, hname=hname, W=W, V=V, feeds=feeds, feed_y=feed_y, col=col, lc=lc, kw=kw, lever_region=lever_region, lever_syn=lever_syn, lever_axon=lever_axon, lever=lever, lamp=lamp, status=status, bar=bar)
     barrels.emit(c)
     persist.emit(c)
     parser.emit(c)

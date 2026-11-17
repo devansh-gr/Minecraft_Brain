@@ -99,7 +99,10 @@ def composition(ring_outer, M, fills):
     L += [f"{c} replace polished_deepslate" for c in fills(pts, FLOOR, "sea_lantern")]   # halo around the brain
     for (a, b, c, d) in [(X0, Z0, X1, Z0), (X0, Z1, X1, Z1), (X0, Z0, X0, Z1), (X1, Z0, X1, Z1)]:
         L += [f"fill {a} -40 {b} {c} -40 {d} sea_lantern", f"fill {a} -20 {b} {c} -20 {d} sea_lantern"]
-    for x in range(X0 + 6, X1, 14):                                        # soft ambient above the floor
-        for z in range(Z0 + 6, Z1, 14):
-            L.append(f"setblock {x} -48 {z} light[level=9]")
+    bx0, bz0 = M(0, 0)
+    bx1, bz1 = M(*ring_outer.shape)
+    for x in range(X0 + 6, X1, 14):                                        # soft ambient above the floor,
+        for z in range(Z0 + 6, Z1, 14):                                    # never inside the brain's footprint
+            if not (bx0 - 2 <= x <= bx1 + 2 and bz0 - 2 <= z <= bz1 + 2):
+                L.append(f"setblock {x} -48 {z} light[level=9]")
     return L

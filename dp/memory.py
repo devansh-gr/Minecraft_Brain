@@ -4,7 +4,7 @@ from .common import *
 
 
 def emit(c):
-    w, R, N, J, ri, cx, hx, hname, W, V, feeds, col, lc, kw, lever_region, lever_syn, lever_axon, lever, lamp, status, bar = (c.w, c.R, c.N, c.J, c.ri, c.cx, c.hx, c.hname, c.W, c.V, c.feeds, c.col, c.lc, c.kw, c.lever_region, c.lever_syn, c.lever_axon, c.lever, c.lamp, c.status, c.bar)
+    w, R, N, J, ri, cx, hx, hname, W, V, feeds, feed_y, col, lc, kw, lever_region, lever_syn, lever_axon, lever, lamp, status, bar = (c.w, c.R, c.N, c.J, c.ri, c.cx, c.hx, c.hname, c.W, c.V, c.feeds, c.feed_y, c.col, c.lc, c.kw, c.lever_region, c.lever_syn, c.lever_axon, c.lever, c.lamp, c.status, c.bar)
     # ---------------- working memory (5 most recent)
     rec = ["data modify storage brain:a rec set value {x:[0,0,0,0,0,0,0,0],o:[0,0,0,0,0,0,0,0],tr:\"\",les:\"\"}",
            "data modify storage brain:a rec.q set from storage brain:a q",

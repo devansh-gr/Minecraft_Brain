@@ -471,7 +471,7 @@ def main():
         for word in words.split():
             kw.setdefault(word, {"r": rid})
     print(f"lexicon {len(kw)} words")
-    info = net.emit(w, REGIONS, col, feeds, lc, kw)
+    info = net.emit(w, REGIONS, col, feeds, lc, kw, [LAMP + int(hgt[f]) for f in feed_cells])
     colors = {reg[0]: reg[1] for reg in REGIONS}
     w("build_console", net.console(info["cx"], info["R"], colors))
     w("build_labels", net.labels(info["cx"], info["R"]))

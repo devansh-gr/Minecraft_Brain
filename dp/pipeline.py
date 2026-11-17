@@ -4,7 +4,7 @@ from .common import *
 
 
 def emit(c):
-    w, R, N, J, ri, cx, hx, hname, W, V, feeds, col, lc, kw, lever_region, lever_syn, lever_axon, lever, lamp, status, bar = (c.w, c.R, c.N, c.J, c.ri, c.cx, c.hx, c.hname, c.W, c.V, c.feeds, c.col, c.lc, c.kw, c.lever_region, c.lever_syn, c.lever_axon, c.lever, c.lamp, c.status, c.bar)
+    w, R, N, J, ri, cx, hx, hname, W, V, feeds, feed_y, col, lc, kw, lever_region, lever_syn, lever_axon, lever, lamp, status, bar = (c.w, c.R, c.N, c.J, c.ri, c.cx, c.hx, c.hname, c.W, c.V, c.feeds, c.feed_y, c.col, c.lc, c.kw, c.lever_region, c.lever_syn, c.lever_axon, c.lever, c.lamp, c.status, c.bar)
     # ---------------- stages (driven by brain:clock)
     def stage_lamps(active):
         return [lamp(2 + 2 * n, LZ, n == active) for n in range(len(STAGES))]
@@ -32,8 +32,9 @@ def emit(c):
           'data modify storage brain:a win set value ""', 'data modify storage brain:a lost set value ""']
     for i, r in enumerate(R):
         fx, fz = feeds[i]
+        fy = feed_y[i]
         rd += [f"execute store success score f{i} brain.n if block {cx[r]} {L1} 3 repeater[powered=true]",
-               f"execute store success score d{i} brain.n unless block {fx} -58 {fz} redstone_wire[power=0]",
+               f"execute store success score d{i} brain.n unless block {fx} {fy} {fz} redstone_wire[power=0]",
                f"scoreboard players operation #nwin brain.t += f{i} brain.n",
                f"execute if score f{i} brain.n matches 1 if score d{i} brain.n matches 1 run scoreboard players add #ndel brain.t 1",
                f'execute if score f{i} brain.n matches 1 run function brain:ui/addwin {{v:"{NAMES[r]} "}}',
