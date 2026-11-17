@@ -82,10 +82,13 @@ def lateral_map():
     # resample to blocks: rows = superior->inferior (z), cols = anterior->posterior
     ys = np.arange(surf.shape[0] - 1, -1, -MM_PER_BLOCK)   # anterior first
     zz = np.arange(surf.shape[1] - 1, -1, -MM_PER_BLOCK)   # superior first
-    grid = surf[np.round(ys).astype(int)[:, None], np.round(zz).astype(int)[None, :]]  # [col, row]
+    iy, iz = np.round(ys).astype(int)[:, None], np.round(zz).astype(int)[None, :]
+    grid = surf[iy, iz]                                        # [col, row]
+    depth = first[iy, iz].astype(float)                        # mm from the left edge to the cortical surface
     keep_c = np.where((grid != -2).any(axis=1))[0]
     keep_r = np.where((grid != -2).any(axis=0))[0]
-    grid = grid[keep_c.min():keep_c.max() + 1, keep_r.min():keep_r.max() + 1]
+    crop = (slice(keep_c.min(), keep_c.max() + 1), slice(keep_r.min(), keep_r.max() + 1))
+    grid, depth = grid[crop], depth[crop]
     # drop specks: keep the largest component of each region
     for r in range(N):
         lbl, n = ndimage.label(grid == r)
@@ -100,11 +103,59 @@ def lateral_map():
                     vals = grid[ring]
                     vals = vals[vals != r]
                     grid[sel] = np.bincount(vals).argmax() if vals.size else -2
-    return grid  # grid[x][z]
+    return grid, depth  # grid[x][z]
+
+
+# ---------------------------------------------------------------- 3D relief from the volumetric surface
+RELIEF = True          # False -> flat map (v3 fallback)
+RELIEF_SCALE = 0.45    # fraction of the true lateral bulge kept (slope must stay <= 1 block per block)
+HMAX = 16
+TERRACE = 3
+
+
+def lipschitz(h, fixed=()):
+    """Lower h until 4-neighbours differ by at most 1 (outside the brain counts as 0)."""
+    while True:
+        p = np.pad(h, 1)
+        lim = np.minimum.reduce([p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]]) + 1
+        new = np.minimum(h, lim)
+        if (new == h).all():
+            return h
+        h = new
+
+
+def relief_heights(grid, depth, feeds):
+    brain = grid != -2
+    if not RELIEF:
+        return np.zeros(grid.shape, int)
+    bulge = np.where(brain, depth[brain].max() - depth, 0) / MM_PER_BLOCK * RELIEF_SCALE
+    # terraces: quantised heights leave wide flat bands where repeaters can sit
+    h = np.where(brain, np.minimum(np.floor(bulge / TERRACE) * TERRACE, HMAX), 0).astype(int)
+    for _ in range(50):
+        old = h.copy()
+        for fx, fz in feeds:            # feeds sit on torch ladders: height multiple of 4, no higher neighbour
+            h[fx, fz] -= h[fx, fz] % 4
+            for a, b in NB4:
+                h[fx + a, fz + b] = min(h[fx + a, fz + b], h[fx, fz])
+        h = lipschitz(h)
+        if (h == old).all():
+            break
+    assert all(h[f] % 4 == 0 for f in feeds)
+    return h
+
+
+def pick_feed(grid, r):
+    """Deepest interior cell of region r (taxicab distance to its border)."""
+    W, H = grid.shape
+    cells = grid == r
+    inner = cells & ~np.pad(~cells, 1, constant_values=True)[:-2, 1:-1] & ~np.pad(~cells, 1, constant_values=True)[2:, 1:-1] \
+        & ~np.pad(~cells, 1, constant_values=True)[1:-1, :-2] & ~np.pad(~cells, 1, constant_values=True)[1:-1, 2:]
+    dist = ndimage.distance_transform_cdt(inner, metric="taxicab")
+    return tuple(int(v) for v in np.unravel_index(np.argmax(dist), dist.shape))
 
 
 # ---------------------------------------------------------------- dust mesh design
-def design_region(grid, r):
+def design_region(grid, r, hgt, feed):
     W, H = grid.shape
     cells = {(x, z) for x, z in zip(*np.nonzero(grid == r))}
     def inb(x, z):
@@ -112,12 +163,7 @@ def design_region(grid, r):
     boundary = {(x, z) for (x, z) in cells
                 if any(not inb(x + a, z + b) or grid[x + a, z + b] != r for a, b in NB4)}
     inner = cells - boundary
-    # feed: deepest interior cell
-    msk = np.zeros(grid.shape, bool)
-    for x, z in inner:
-        msk[x, z] = True
-    dist = ndimage.distance_transform_cdt(msk, metric="taxicab")
-    feed = tuple(int(v) for v in np.unravel_index(np.argmax(dist), dist.shape))
+    assert feed in inner
     # beacon shutter under the region: torch on the feed block, sticky piston, shutter block, beam column.
     # Cells above the torch, the piston (quasi-connectivity) and the column carry no lamp/dust.
     side = None
@@ -153,10 +199,18 @@ def design_region(grid, r):
             back, front = (x - a, z - b), (x + a, z + b)
             if back in mesh and front in mesh and back not in cut and front not in cut \
                     and zone[back] < zone[c] and zone[front] == zone[c] \
+                    and hgt[back] - hgt[c] in (0, 1) and hgt[front] - hgt[c] in (-1, 0, 1) \
                     and not any((x + p, z + s) in reps for p, s in NB4):
                 reps[c] = (a, b)                        # signal flows along (a, b)
                 break
     dust = mesh - cut
+    # downhill front: the repeater fires into the lower cell's glass slot, so that slot holds a lamp (a
+    # conductor) which then powers the dust beneath it. A capped dust cannot connect uphill.
+    caps = {(c[0] + a, c[1] + b) for c, (a, b) in reps.items() if hgt[c[0] + a, c[1] + b] == hgt[c] - 1}
+
+    def linked(a, b):
+        dh = int(hgt[b]) - int(hgt[a])
+        return abs(dh) <= 1 and not (dh == 1 and a in caps) and not (dh == -1 and b in caps)
     # simulate dust strength to find dark cells
     power = {}
     src = deque()
@@ -173,7 +227,7 @@ def design_region(grid, r):
             c = q.popleft()
             for a, b in NB4:
                 n = (c[0] + a, c[1] + b)
-                if n in dust and power.get(n, 0) < power[c] - 1:
+                if n in dust and linked(c, n) and power.get(n, 0) < power[c] - 1:
                     power[n] = power[c] - 1
                     q.append(n)
         for c, (a, b) in reps.items():
@@ -183,7 +237,7 @@ def design_region(grid, r):
                 changed = True
     lit = {c for c in dust if power.get(c, 0) > 0}
     return dict(cells=cells, boundary=boundary, feed=feed, dust=dust, cut=cut, reps=reps,
-                lit=lit, rings=max(zone.values()), side=side, excl=excl, column=column)
+                lit=lit, rings=max(zone.values()), side=side, excl=excl, column=column, caps=caps)
 
 
 # ---------------------------------------------------------------- helpers
@@ -238,10 +292,13 @@ def main():
         "description": "Redstone Cortex v2", "min_format": 121, "max_format": 121}}))
     (DP / "data/minecraft/tags/function/load.json").write_text(json.dumps({"values": ["brain:load"]}))
 
-    grid = lateral_map()
+    grid, depth = lateral_map()
     W, H = grid.shape
     mx0 = 16 - W // 2
-    designs = [design_region(grid, r) for r in range(N)]
+    feed_cells = [pick_feed(grid, r) for r in range(N)]
+    hgt = relief_heights(grid, depth, feed_cells)
+    designs = [design_region(grid, r, hgt, feed_cells[r]) for r in range(N)]
+    print(f"relief: max height {hgt.max()}, mean {hgt[grid != -2].mean():.1f} blocks")
     tot = sum(len(dz["dust"]) for dz in designs)
     print(f"map {W}x{H} = {(grid >= 0).sum()} cells, dust {tot}, "
           f"lamps lit {100 * sum(len(dz['lit']) for dz in designs) / tot:.1f}%")
@@ -314,9 +371,14 @@ def main():
         T += [f"setblock {x0} {L1} 12 comparator[facing=north,mode=subtract]",
               f"setblock {x0+1} {L0} 12 glass", f"setblock {x0+1} {L1} 12 redstone_wire",
               f"setblock {x0+2} {L0} 12 redstone_lamp", f"setblock {x0+2} {L1} 12 lever[face=floor,facing=north]"]
-        T.append(f"setblock {fx} {L1} {fz} smooth_stone")       # feed block, dust on top climbs into the mesh
+        T.append(f"setblock {fx} {L1} {fz} smooth_stone")       # feed block (strongly powered by the tract)
         T.append(f"setblock {fx} {L0} {fz} smooth_stone")
-        T.append(f"setblock {fx} {LAMP} {fz} redstone_wire")
+        # torch ladder up to the relief: torch, block, torch, block ... each torch inverts, so a feed height
+        # that is a multiple of 4 keeps the top block powered exactly when the tract is
+        hf = int(hgt[feed_cells[r]])
+        for j in range(1, hf + 1):
+            T.append(f"setblock {fx} {L1 + j} {fz} {'redstone_torch' if j % 2 else 'smooth_stone'}")
+        T.append(f"setblock {fx} {LAMP + hf} {fz} redstone_wire")
         # beacon shutter: torch on the feed block (off when the region fires) holds a sticky piston extended,
         # which keeps a block in the beam column. Region fires -> torch off -> piston retracts -> beam opens.
         sd = designs[r]["side"]; f = "east" if sd > 0 else "west"
@@ -329,32 +391,39 @@ def main():
               f"setblock {fx + 2 * sd} {L1} {bz} black_concrete",
               f"setblock {fx + sd} {L1} {fz} redstone_wall_torch[facing={f}]",
               f"setblock {fx + sd} {L1} {bz} sticky_piston[facing={f}]",
-              f"setblock {bx} -36 {bz} air"]
+              f"setblock {bx} {lab.TOP} {bz} air"]
         # note block branch: dust off the tract at z=6 into a note block
         inst, note = REGIONS[r][3], REGIONS[r][4]
         T += [f"setblock {x0+1} {L0} 6 redstone_lamp", f"setblock {x0+1} {L1} 6 redstone_wire",
               f"setblock {x0+2} {L0} 6 {inst}", f"setblock {x0+2} {L1} 6 note_block[note={note}]"]
 
-    # ---------------- cortex map
+    # ---------------- cortex (relief: every cell sits at its own height)
+    def hfills(cells, base, block):
+        out, byh = [], {}
+        for c in cells:
+            byh.setdefault(int(hgt[c]), []).append(c)
+        for hh, cs in sorted(byh.items()):
+            out += fills([M(*c) for c in cs], base + hh, block)
+        return out
     C = ["# lamp cortex"]
-    stem = [M(x, z) for x, z in zip(*np.nonzero(grid == STEM))]
-    C += fills(stem, LAMP, "gray_concrete")
+    stem_cells = [(int(x), int(z)) for x, z in zip(*np.nonzero(grid == STEM))]
+    C += hfills(stem_cells, LAMP, "gray_concrete")
     for r, dz in enumerate(designs):
-        color = f"{REGIONS[r][1]}_concrete"
-        C += fills([M(*c) for c in dz["boundary"]], LAMP, color)
-        lamps = dz["cells"] - dz["boundary"] - {dz["feed"]} - dz["excl"]
-        C += fills([M(*c) for c in dz["excl"]], LAMP, "glass")
-        C += fills([M(*c) for c in lamps], LAMP, "redstone_lamp")
+        C += hfills(dz["boundary"], LAMP, f"{REGIONS[r][1]}_concrete")
+        C += hfills(dz["excl"], LAMP, "glass")
+        C += hfills(dz["cells"] - dz["boundary"] - {dz["feed"]} - dz["excl"], LAMP, "redstone_lamp")
     for r, dz in enumerate(designs):
-        C += fills([M(*c) for c in dz["dust"]], MESH, "redstone_wire")
+        C += hfills(dz["dust"], MESH, "redstone_wire")
         for c, fl in dz["reps"].items():
             x, z = M(*c)
-            C.append(f"setblock {x} {MESH} {z} repeater[facing={FACE[fl]},delay={RING_DELAY}]")
+            C.append(f"setblock {x} {MESH + int(hgt[c])} {z} repeater[facing={FACE[fl]},delay={RING_DELAY}]")
     for r, dz in enumerate(designs):
-        C += fills([M(*c) for c in dz["cells"]], MESH + 1, f"{REGIONS[r][1]}_stained_glass")
-    C += fills(stem, MESH + 1, "gray_stained_glass")
-    for r, dz in enumerate(designs):     # raised sulci: region borders stand one block proud
-        C += fills([M(*c) for c in dz["boundary"]], MESH + 2, f"{REGIONS[r][1]}_stained_glass")
+        C += hfills(dz["cells"], MESH + 1, f"{REGIONS[r][1]}_stained_glass")
+        C += hfills(dz["boundary"], MESH + 2, f"{REGIONS[r][1]}_stained_glass")   # raised sulci
+    C += hfills(stem_cells, MESH + 1, "gray_stained_glass")
+    for dz in designs:
+        C += hfills(dz["caps"], MESH + 1, "redstone_lamp")
+
     # ---------------- datapack logic, console, lab
     lc = {ch: ch for ch in "abcdefghijklmnopqrstuvwxyz"}
     lc.update({ch.upper(): ch for ch in "abcdefghijklmnopqrstuvwxyz"})
@@ -372,15 +441,16 @@ def main():
     region_labels = []
     for r, dz in enumerate(designs):
         xs_, zs_ = zip(*dz["cells"])
-        region_labels.append((REGIONS[r][0], *M(int(np.mean(xs_)), int(np.mean(zs_)))))
-    w("build_lab", lab.build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills))
+        lx, lz = int(np.mean(xs_)), int(np.mean(zs_))
+        region_labels.append((REGIONS[r][0], *M(lx, lz), MESH + 1 + max(int(hgt[c]) for c in dz["cells"]) + 6))
+    w("build_lab", lab.build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills, hgt))
     lab.cameras(w)
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
     w("build", ["gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
-                f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {MESH+2} {MAP_Z0+H+1} air",
+                f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {LAMP + HMAX + 4} {MAP_Z0+H+1} air",
                 "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
                 "function brain:build_cortex", "function brain:build_console", "function brain:load",
                 "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show"])
@@ -388,7 +458,7 @@ def main():
 
     # test hook: list of lamp cells that must light per region
     (ROOT / "build" / "expect.json").write_text(json.dumps({
-        REGIONS[r][0]: {"feed": M(*dz["feed"]), "lit": [M(*c) for c in sorted(dz["lit"])], "x": info["cx"][REGIONS[r][0]],
+        REGIONS[r][0]: {"feed": M(*dz["feed"]), "lit": [(M(*c)[0], LAMP + int(hgt[c]), M(*c)[1]) for c in sorted(dz["lit"])], "x": info["cx"][REGIONS[r][0]],
                         "idx": r} for r, dz in enumerate(designs)}))
 
 

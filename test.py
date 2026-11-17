@@ -28,7 +28,7 @@ def status():
 
 
 def lit_frac(r):
-    return sum("passed" in cmd(f"execute if block {x} -58 {z} redstone_lamp[lit=true]") for x, z in SAMPLE[r]) / len(SAMPLE[r])
+    return sum("passed" in cmd(f"execute if block {x} {y} {z} redstone_lamp[lit=true]") for x, y, z in SAMPLE[r]) / len(SAMPLE[r])
 
 
 def lit_regions():

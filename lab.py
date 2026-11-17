@@ -4,7 +4,7 @@ import numpy as np
 from scipy import ndimage
 
 X0, X1, Z0, Z1 = -76, 106, -96, 186       # interior bounds
-FLOOR, TOP = -61, -36
+FLOOR, TOP = -61, 0
 NAMES = {"prefrontal": "Prefrontal · planning, emotion", "broca": "Broca · speech, grammar",
          "motor": "Motor · movement", "somato": "Somatosensory · touch, pain",
          "parietal": "Parietal · number, space", "temporal": "Temporal · sound, memory, meaning",
@@ -25,7 +25,7 @@ def td(x, y, z, text, scale, color="white", tag="lab", bb="vertical", width=400)
             f'translation:[0f,0f,0f],scale:[{scale}f,{scale}f,{scale}f]}}}}')
 
 
-def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
+def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills, hgt):
     L = ["kill @e[type=text_display,tag=lab]"]
     # floor, walls, roof
     L += [f"fill {X0} {FLOOR} {Z0} {X1} {FLOOR} {Z1} polished_deepslate replace grass_block"]
@@ -42,6 +42,7 @@ def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
     for z in range(Z0, Z1 + 1, 16):
         for x in (X0, X1):
             L += [f"fill {x} {FLOOR+1} {z} {x} {TOP-1} {z} deepslate_tiles", f"fill {x} -52 {z} {x} -44 {z} sea_lantern"]
+    L.append(f"fill {X0-1} -36 {Z0-1} {X1+1} -36 {Z1+1} air replace black_stained_glass")   # v3.1 roof height
     L.append(f"fill {X0-1} {TOP} {Z0-1} {X1+1} {TOP} {Z1+1} black_stained_glass")
 
     # brain plinth: 2-block ring around the cortex, skipping tract entries
@@ -63,7 +64,7 @@ def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
         for z in range(0, H, 7):
             if brain[x, z]:
                 wx, wz = M(x, z)
-                L.append(f"setblock {wx} -51 {wz} light[level=6]")
+                L.append(f"setblock {wx} {-52 + int(hgt[x, z])} {wz} light[level=6]")
     # (an observation balcony was removed after in-client screenshots showed it hiding the brain)
     L.append("fill -44 -48 34 76 -46 40 air")
     for x in range(-44, 77, 12):
@@ -72,8 +73,8 @@ def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
     L.append(td(16, -42, 44, "E · ANATOMICAL BRAIN\nleft hemisphere, Harvard-Oxford atlas, 12,856 lamp neurons", 3, "aqua", width=600))
     legend = "\n".join(NAMES[r] for r in NAMES)
     L.append(td(mx0 - 8, -48, MAP_Z0 + 20, "REGIONS\n" + legend, 1.6, "white", width=400))
-    for rid, x, z in region_labels:
-        L.append(td(x, -50, z, NAMES[rid].split(" · ")[0], 4, TEXT_COLOR.get(colors[rid], "white"), bb="center"))
+    for rid, x, z, y in region_labels:
+        L.append(td(x, y, z, NAMES[rid].split(" · ")[0], 4, TEXT_COLOR.get(colors[rid], "white"), bb="center"))
     L.append(td(16, -40, -88, "REDSTONE CORTEX\na neuroscience-inspired circuit model in vanilla Minecraft", 3, "white", width=700))
     return L
 
