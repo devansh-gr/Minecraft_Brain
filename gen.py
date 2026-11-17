@@ -12,7 +12,7 @@ import nibabel as nib
 from scipy import ndimage
 from nilearn import datasets, image
 from lexicon import LEX
-import net, lab
+import dp as net, lab
 
 ROOT = Path(__file__).parent
 DP = ROOT / "build" / "datapack" / "redstone_cortex"

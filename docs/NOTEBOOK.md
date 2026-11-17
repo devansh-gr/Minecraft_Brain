@@ -214,3 +214,12 @@ See `TEST_REPORT.md`: 21 of 21 checks passed. One defect was found and fixed (ax
 
 ### 11.9 Not verified
 Visual appearance and camera framing were not inspected in a game client.
+
+## 12. Phase 1 validation (2026-11-18)
+Full record in `PHASE1_EVIDENCE.md`. Summary:
+- Code structure: `net.py` was split into the `dp/` package (13 modules, one per subsystem). The generated datapack is byte-identical before and after (137 files).
+- Test copy of the installed world loaded the datapack with zero errors; a planted invalid function was reported, confirming that the log check works.
+- Forward pass: two inputs gave different hidden and output activations, identical to an independent reference implementation (`reference.py`) fed the in-game weights, including after four weights were altered inside the game only.
+- Integration: comparator readings equal the datapack outputs on all 8 channels; the max chain carries the maximum; only the maximal channel's decision comparator outputs.
+- Causality: removing one inhibition comparator made a non-maximal channel fire with unchanged datapack values. Runtime functions write only barrels, console indicator bases and lever states.
+- Stated limitation: input-to-hidden connectivity is sparse (24 fixed synapses); only hidden-to-output (128 synapses) is dense and plastic.

@@ -14,4 +14,4 @@ Docs: [architecture](docs/ARCHITECTURE.md), [how it works](docs/GUIDE.md), [test
 python3 -m venv .venv && .venv/bin/pip install numpy scipy nibabel nilearn nbtlib
 .venv/bin/python gen.py
 ```
-Copy `build/datapack/redstone_cortex` into a flat 26.3 world's `datapacks` folder, then run `/forceload add -80 -100 110 190` and `/function brain:build`. Tests: `python3 test.py` against a server with RCON on port 25599.
+Copy `build/datapack/redstone_cortex` into a flat 26.3 world's `datapacks` folder, then run `/forceload add -80 -100 110 190` and `/function brain:build`. Tests: `python3 test.py` and `python3 validate_phase1.py` against a server with RCON on port 25599. Datapack source lives in `dp/` (one module per subsystem).
