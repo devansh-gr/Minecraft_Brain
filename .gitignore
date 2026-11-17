@@ -4,3 +4,4 @@ server/
 reports/
 build/
 __pycache__/
+backups/

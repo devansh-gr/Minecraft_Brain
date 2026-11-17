@@ -12,6 +12,7 @@ import nibabel as nib
 from scipy import ndimage
 from nilearn import datasets, image
 from lexicon import LEX
+import net, lab
 
 ROOT = Path(__file__).parent
 DP = ROOT / "build" / "datapack" / "redstone_cortex"
@@ -293,7 +294,10 @@ def main():
         path += [(x, tz) for x in range(x0 + step, fx + step, step)] if fx != x0 else []
         path += [(fx, z) for z in range(tz + 1, fz)]
         lampsup = lambda x, z: "redstone_lamp" if z < MAP_Z0 else "smooth_stone"
-        route(path, L0, L1, lampsup, T)
+        route(path, L0, L1, lampsup, T, delay=2)
+        T += [f"setblock {x0} {L1} 12 comparator[facing=north,mode=subtract]",
+              f"setblock {x0+1} {L0} 12 glass", f"setblock {x0+1} {L1} 12 redstone_wire",
+              f"setblock {x0+2} {L0} 12 redstone_lamp", f"setblock {x0+2} {L1} 12 lever[face=floor,facing=north]"]
         T.append(f"setblock {fx} {L1} {fz} smooth_stone")       # feed block, dust on top climbs into the mesh
         T.append(f"setblock {fx} {L0} {fz} smooth_stone")
         T.append(f"setblock {fx} {LAMP} {fz} redstone_wire")
@@ -308,8 +312,8 @@ def main():
     C += fills(stem, LAMP, "gray_concrete")
     for r, dz in enumerate(designs):
         color = f"{REGIONS[r][1]}_concrete"
-        C += fills([M(*c) for c in dz["boundary"] | dz["cut"]], LAMP, color)
-        lamps = dz["cells"] - dz["boundary"] - dz["cut"] - {dz["feed"]}
+        C += fills([M(*c) for c in dz["boundary"]], LAMP, color)
+        lamps = dz["cells"] - dz["boundary"] - {dz["feed"]}
         C += fills([M(*c) for c in lamps], LAMP, "redstone_lamp")
     for r, dz in enumerate(designs):
         C += fills([M(*c) for c in dz["dust"]], MESH, "redstone_wire")
@@ -319,188 +323,43 @@ def main():
     for r, dz in enumerate(designs):
         C += fills([M(*c) for c in dz["cells"]], MESH + 1, f"{REGIONS[r][1]}_stained_glass")
     C += fills(stem, MESH + 1, "gray_stained_glass")
-    # floating labels
-    for r, dz in enumerate(designs):
-        xs_, zs_ = zip(*dz["cells"])
-        cx, cz = M(int(np.mean(xs_)), int(np.mean(zs_)))
-        C.append(f'summon text_display {cx} {MESH+7} {cz} {{billboard:"center",see_through:1b,'
-                 f'background:0,shadow:1b,text:{{text:"{TITLES[REGIONS[r][0]]}",color:"white",bold:true}},'
-                 f'transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],'
-                 f'translation:[0f,0f,0f],scale:[5f,5f,5f]}},Tags:["brain"]}}')
-
-    # ---------------- input station
-    sx, sy, sz = SIGN
-    S = [f"fill 11 {L0} -25 17 {L0} -25 polished_deepslate", f"fill 11 {L1} -25 16 {L1} -25 polished_deepslate",
-         f"setblock {sx} {sy} {sz} oak_wall_sign[facing=north]",
-         f'data merge block {sx} {sy} {sz} {{front_text:{{messages:["what is seven","times eight?","",""]}}}}',
-         f"setblock 15 {L1} -26 stone_button[face=wall,facing=north]",
-         f'setblock 15 {L1} -24 command_block[facing=south]{{Command:"function brain:read"}}']
-    S += labels()
-    lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
-    w("build", ["gamerule command_block_output false",
-                "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
-                f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {MESH+1} {MAP_Z0+H+1} air",
-                "function brain:build_board", "function brain:build_tracts", "function brain:build_cortex",
-                "function brain:build_station", "function brain:load"])
-    w("build_board", B); w("build_tracts", T); w("build_cortex", C); w("build_station", S)
-    print(f"world x {lo_x}..{hi_x}, z -12..{MAP_Z0+H}")
-
-    # ---------------- vesicle fills
-    for s in range(16):
-        t = 0 if s == 0 else math.ceil(1728 * (s - 1) / 14) or 1
-        assert s == (0 if t == 0 else 1 + int(14 * t / 1728)), s
-        lines = []
-        for slot in range(27):
-            c = min(64, t); t -= c
-            lines.append(f"$item replace block $(x) $(y) $(z) container.{slot} with "
-                         + (f"minecraft:glowstone_dust {c}" if c else "minecraft:air"))
-        w(f"fill/s{s}", lines)
-
-    def pools(level, zz, mode):
-        out = []
-        for r, reg in enumerate(REGIONS):
-            arg = f"{{x:{4*col[r]},y:{level},z:{zz}}}"
-            if mode == "clear":
-                out.append(f"function brain:fill/s0 {arg}")
-            else:
-                out += [f"execute if score {reg[0]} brain.sig matches {s} run function brain:fill/s{s} {arg}"
-                        for s in range(1, 16)]
-        return out
-    w("display", pools(L1, -3, "set"))
-    ramp = []
-    for r, reg in enumerate(REGIONS):
-        ramp.append(f"$execute if score {reg[0]} brain.sig matches $(k).. run function brain:fill/s$(k) "
-                    f"{{x:{4*col[r]},y:{L0},z:2}}")
-    w("ramp_m", ramp)
-    w("inhibit", ["execute store result storage brain:p k int 1 run scoreboard players add #k brain.t 1",
-                  "function brain:ramp_m with storage brain:p",
-                  "execute if score #k brain.t matches ..14 run schedule function brain:inhibit 6t"])
-    w("excite", pools(L1, 1, "set") + ["schedule function brain:clear 260t"])
-    w("clear", pools(L1, 1, "clear") + pools(L0, 2, "clear") + pools(L1, -3, "clear"))
-
-    # ---------------- parser
+    for r, dz in enumerate(designs):     # raised sulci: region borders stand one block proud
+        C += fills([M(*c) for c in dz["boundary"]], MESH + 2, f"{REGIONS[r][1]}_stained_glass")
+    # ---------------- datapack logic, console, lab
     lc = {ch: ch for ch in "abcdefghijklmnopqrstuvwxyz"}
     lc.update({ch.upper(): ch for ch in "abcdefghijklmnopqrstuvwxyz"})
     lc.update({d: "#" for d in "0123456789"})
     lc["'"] = ""
-    ids = {reg[0] for reg in REGIONS}
     kw = {}
     for rid, words in LEX.items():
-        assert rid in ids, rid
         for word in words.split():
             kw.setdefault(word, {"r": rid})
     print(f"lexicon {len(kw)} words")
-    snbt = lambda d: "{" + ",".join(f'"{k}":' + (json.dumps(v) if not isinstance(v, dict) else snbt(v))
-                                    for k, v in d.items()) + "}"
-    w("load", ["scoreboard objectives add brain.s dummy", "scoreboard objectives add brain.sig dummy",
-               "scoreboard objectives add brain.t dummy",
-               f"data modify storage brain:lc m set value {snbt(lc)}",
-               f"data modify storage brain:kw m set value {snbt(kw)}"])
-    read = ["schedule clear brain:inhibit", "schedule clear brain:excite", "schedule clear brain:clear",
-            "function brain:clear",
-            f"data modify storage brain:p lines set from block {sx} {sy} {sz} front_text.messages",
-            "data modify storage brain:p l set value {}",
-            "data modify storage brain:p l.a set string storage brain:p lines[0]",
-            "data modify storage brain:p l.b set string storage brain:p lines[1]",
-            "data modify storage brain:p l.c set string storage brain:p lines[2]",
-            "data modify storage brain:p l.d set string storage brain:p lines[3]",
-            "function brain:join with storage brain:p l",
-            'data modify storage brain:p w set value ""',
-            "scoreboard players set #i brain.t 0",
-            "execute store result score #len brain.t run data get storage brain:p q"]
-    read += [f"scoreboard players set {reg[0]} brain.s 0" for reg in REGIONS]
-    read += ["function brain:loop", "scoreboard players set #two brain.t 2"]
-    read += [f"execute if block {4*col[r]} {L1} -21 lever[powered=true] run scoreboard players set {reg[0]} brain.s 0"
-             for r, reg in enumerate(REGIONS)]
-    for reg in REGIONS:
-        rid = reg[0]
-        read += [f"scoreboard players operation {rid} brain.sig = {rid} brain.s",
-                 f"scoreboard players operation {rid} brain.sig *= #two brain.t",
-                 f"execute if score {rid} brain.s matches 1.. run scoreboard players add {rid} brain.sig 1",
-                 f"execute if score {rid} brain.sig matches 16.. run scoreboard players set {rid} brain.sig 15"]
-    allzero = " ".join(f"if score {reg[0]} brain.sig matches 0" for reg in REGIONS)
-    read += [f"execute {allzero} unless block {4*col[REGIONS.index(next(x for x in REGIONS if x[0]=='temporal'))]} {L1} -21 lever[powered=true] run scoreboard players set temporal brain.sig 1",
-             "scoreboard players set #k brain.t 0", "function brain:display",
-             "schedule function brain:inhibit 20t", "schedule function brain:excite 200t"]
-    w("read", read)
-    w("join", ['$data modify storage brain:p q set value "$(a) $(b) $(c) $(d) "'])
-    w("loop", ["execute if score #i brain.t >= #len brain.t run return 0",
-               "execute store result storage brain:p i int 1 run scoreboard players get #i brain.t",
-               "scoreboard players add #i brain.t 1",
-               "execute store result storage brain:p j int 1 run scoreboard players get #i brain.t",
-               "function brain:char with storage brain:p",
-               'data modify storage brain:p n set value " "',
-               "function brain:norm with storage brain:p",
-               'execute if data storage brain:p {n:" "} unless data storage brain:p {w:""} run function brain:word',
-               'execute if data storage brain:p {n:" "} run data modify storage brain:p w set value ""',
-               'execute unless data storage brain:p {n:" "} run function brain:app with storage brain:p',
-               "function brain:loop"])
-    w("char", ["$data modify storage brain:p c set string storage brain:p q $(i) $(j)"])
-    w("norm", ['$data modify storage brain:p n set from storage brain:lc m."$(c)"'])
-    w("app", ['$data modify storage brain:p w set value "$(w)$(n)"'])
-    # word: exact match, else strip one suffix and retry
-    w("word", ["data modify storage brain:p s set from storage brain:p w",
-               "execute if function brain:try run return 1",
-               "execute store result score #wl brain.t run data get storage brain:p w",
-               "execute if score #wl brain.t matches ..3 run return 0",
-               "data modify storage brain:p e1 set string storage brain:p w -1",
-               "data modify storage brain:p e2 set string storage brain:p w -2",
-               "data modify storage brain:p e3 set string storage brain:p w -3",
-               'execute if data storage brain:p {e3:"ing"} if function brain:st/ing run return 1',
-               'execute if data storage brain:p {e3:"ies"} if function brain:st/ies run return 1',
-               'execute if data storage brain:p {e2:"ed"} if function brain:st/ed run return 1',
-               'execute if data storage brain:p {e2:"es"} if function brain:st/es run return 1',
-               'execute if data storage brain:p {e2:"ly"} if function brain:st/ly run return 1',
-               'execute if data storage brain:p {e2:"er"} if function brain:st/er run return 1',
-               'execute if data storage brain:p {e1:"s"} if function brain:st/s run return 1'])
-    w("try", ["return run function brain:try_m with storage brain:p"])
-    w("try_m", ['$execute if data storage brain:kw m."$(s)" run return run function brain:hit with storage brain:kw m."$(s)"',
-              "return fail"])
-    w("hit", ["$scoreboard players add $(r) brain.s 1", "return 1"])
-    w("st/ing", ["data modify storage brain:p s set string storage brain:p w 0 -3",
-                 "execute if function brain:try run return 1",
-                 "function brain:add_e with storage brain:p", "execute if function brain:try run return 1",
-                 "return fail"])
-    w("st/ies", ["data modify storage brain:p s set string storage brain:p w 0 -3",
-                 "function brain:add_y with storage brain:p", "execute if function brain:try run return 1",
-                 "return fail"])
-    w("st/ed", ["data modify storage brain:p s set string storage brain:p w 0 -2",
-                "execute if function brain:try run return 1",
-                "data modify storage brain:p s set string storage brain:p w 0 -1",
-                "execute if function brain:try run return 1", "return fail"])
-    w("st/es", ["data modify storage brain:p s set string storage brain:p w 0 -2",
-                "execute if function brain:try run return 1", "return fail"])
-    w("st/ly", ["data modify storage brain:p s set string storage brain:p w 0 -2",
-                "execute if function brain:try run return 1", "return fail"])
-    w("st/er", ["data modify storage brain:p s set string storage brain:p w 0 -2",
-                "execute if function brain:try run return 1", "return fail"])
-    w("st/s", ["data modify storage brain:p s set string storage brain:p w 0 -1",
-               "execute if function brain:try run return 1", "return fail"])
-    w("add_e", ['$data modify storage brain:p s set value "$(s)e"'])
-    w("add_y", ['$data modify storage brain:p s set value "$(s)y"'])
+    info = net.emit(w, REGIONS, col, feeds, lc, kw)
+    colors = {reg[0]: reg[1] for reg in REGIONS}
+    w("build_console", net.console(info["cx"], info["R"], colors))
+    w("build_labels", net.labels(info["cx"], info["R"]))
+    region_labels = []
+    for r, dz in enumerate(designs):
+        xs_, zs_ = zip(*dz["cells"])
+        region_labels.append((REGIONS[r][0], *M(int(np.mean(xs_)), int(np.mean(zs_)))))
+    w("build_lab", lab.build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills))
+    lab.cameras(w)
+    (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
+    lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
+    w("build", ["gamerule command_block_output false",
+                "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
+                "scoreboard players set #state brain.st 0",
+                f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {MESH+2} {MAP_Z0+H+1} air",
+                "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
+                "function brain:build_cortex", "function brain:build_console", "function brain:load",
+                "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show"])
+    w("build_board", B); w("build_tracts", T); w("build_cortex", C)
 
     # test hook: list of lamp cells that must light per region
     (ROOT / "build" / "expect.json").write_text(json.dumps({
-        REGIONS[r][0]: {"feed": M(*dz["feed"]), "lit": [M(*c) for c in sorted(dz["lit"])]}
-        for r, dz in enumerate(designs)}))
-
-
-def labels():
-    S = []
-    def sign(x, z, lines, rot, y=L1 + 1):
-        S.append(f"setblock {x} {y-1} {z} polished_andesite")
-        S.append(f"setblock {x} {y} {z} oak_sign[rotation={rot}]")
-        msgs = ",".join(json.dumps(l[:15]) for l in (lines + ["", "", "", ""])[:4])
-        S.append(f"data merge block {x} {y} {z} {{is_waxed:1b,front_text:{{messages:[{msgs}]}}}}")
-    sign(-3, 2, ["BARREL", "= vesicle pool", "fuller = more", "transmitter"], 4)
-    sign(-3, 0, ["COMPARATOR", "= synapse", "graded signal", "0 to 15"], 4)
-    sign(-3, -2, ["GRAY LINE", "= inhibitory", "interneurons", "carry the MAX"], 4)
-    sign(-3, 4, ["REPEATER", "= axon hillock", "all-or-none", "spike"], 4)
-    sign(-3, 12, ["LAMP AXON", "repeaters =", "nodes of", "Ranvier"], 4)
-    sign(18, -26, ["WRITE A", "QUESTION", "PRESS BUTTON", ""], 8)
-    sign(-3, -12, ["LAMP BARS", "= candidates", "weakest die as", "inhibition rises"], 4)
-    sign(-3, -21, ["LEVERS", "= lesions", "pull to silence", "a region"], 4)
-    return S
+        REGIONS[r][0]: {"feed": M(*dz["feed"]), "lit": [M(*c) for c in sorted(dz["lit"])], "x": info["cx"][REGIONS[r][0]],
+                        "idx": r} for r, dz in enumerate(designs)}))
 
 
 if __name__ == "__main__":

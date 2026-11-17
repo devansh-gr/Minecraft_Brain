@@ -171,3 +171,46 @@ python3 -m venv .venv && .venv/bin/pip install numpy scipy nibabel nilearn nbtli
 /forceload add -64 -34 96 172
 /function brain:build
 ```
+
+---
+
+## 11. Version 3 (2026-11-18): network, memory, plasticity, lesions, laboratory
+
+### 11.1 Phase 0: audit and backup
+Backups: `backups/world-v2-20261117-1506.tgz` (server world) and `backups/saves-Brain-v2-20261117-1506.tgz` (client save); git tag `v2`. Audit result: every v2 subsystem (parser, barrel encoding, comparator WTA, tracts, cortex meshes, lever lesions) had passed its tests and was retained. v3 was applied to the existing world rather than a regenerated one.
+
+### 11.2 Network (datapack, integer arithmetic)
+- Inputs: x_i = min(15, 3 n_i), where n_i is the keyword count for category i.
+- Hidden layer, 16 units: 8 primary units P_i with W(i -> P_i) = 4, and 8 association units A_m with W = 2 from each of a region pair: (prefrontal, temporal), (Broca, temporal), (motor, cerebellum), (motor, somatosensory), (somatosensory, parietal), (parietal, occipital), (temporal, occipital), (prefrontal, parietal). Biases 0.
+- Hidden dynamics, 4 steps (game ticks 12, 24, 36, 48): I = floor(sum_j u_j / 16); d_j = clamp(floor((sum_i W_ij x_i + b_j) / 4) - I, 0, 15); u_j <- u_j + floor((d_j - u_j + 1) / 2); h_j = u_j. u starts at 0 for each run. This is a first-order leaky integrator with ceiling rounding and a global subtractive inhibitory feedback term.
+- Outputs: o_k = clamp(floor((sum_j V_jk h_j + c_k) / 4), 0, 15). Baseline V(P_k -> o_k) = 4, V(A_m -> o_a) = V(A_m -> o_b) = 1, all others 0; c_k = 0. The output range 0 to 15 maps directly to comparator signal strength.
+- Overflow bound: |sum| <= 16 x 15 x 12 = 2,880, far inside the 32-bit scoreboard range.
+- Hand calculation check: "can you hear and see it" gives x_temporal = x_occipital = 3, h(P) = 3, h(A temporal+occipital) = 3, o_temporal = o_occipital = 4. Measured values matched exactly.
+
+### 11.3 Plasticity
+TRAIN with a selected target t and the LEARN lever on: for each hidden unit with h_j > 0, delta = ceil(h_j / 4); V_jt += delta (capped at 12); for every k != t with o_k >= o_t and o_k > 0, V_jk -= delta (floored at -8). Input-to-hidden weights W are fixed. Weights live in the scoreboard objective `brain.w`, which is saved with the world. `brain:load` re-initialises weights only if `#init` is unset, so `/reload` and restarts keep learned values. RESET LEARNING restores the baseline listed above.
+Measured: one TRAIN toward occipital after the tied run above changed 12 synapses (6 up, 6 down) and the rerun produced o_temporal = 1, o_occipital = 7, a single Visual winner.
+
+### 11.4 Working memory
+Five most recent runs in `storage brain:mem list`: normalised text, x[8], o[8], winner string (from the physical readout), lesion flag, trained flag. REPLAY n loads x from record n and reruns from the input stage with the current weights.
+
+### 11.5 Lesions
+| Type | Control | Mechanism | Effect |
+|---|---|---|---|
+| Region | lever at (x, -59, -21) | datapack sets u(P_k) = 0 each step and o_k = 0 | region leaves the competition; runner-up can win |
+| Synapse | lever at (x, -59, -46) | datapack subtracts V(P_k -> o_k) h(P_k) | output drops; association paths remain |
+| Axon | lever at (x+2, -59, 12) | lever -> dust on glass -> side of a subtract-mode comparator in the tract: output 15 - 15 = 0 | decision fires, cortex region stays dark |
+
+Measured: synapse lesion on parietal lowered o_parietal from 10 to 2; three TRAIN updates toward parietal under the lesion raised it to 9 (recovery through association units). Training also increments the lesioned synapse; that increment has no effect until the lesion is repaired.
+
+### 11.6 State machine and console
+A tick function runs a clock while a computation is active and polls every console button for a rising edge (no command blocks remain in the world). Stages: input (t = 1), hidden steps (12, 24, 36, 48), output (60), inhibitory ramp (76 to 160, every 6 ticks), excitation (250), readout (380), decay (560), idle (580). RUN is ignored while computing. RESET clears barrels and returns to READY. The readout records which tract heads fired (physical decision) and whether each winner's cortex feed is powered (delivery).
+
+### 11.7 Laboratory
+Polished deepslate floor, blackstone-brick perimeter walls with tinted-glass bands, deepslate-tile pillars with sea-lantern cores, black stained-glass roof, a blackstone and oxidised-copper plinth around the cortex, an observation balcony at y = -47 north of the cortex, zone titles and a region legend as text displays. Cortex changes: ring cut cells are now lamps (removing the diamond pattern in the idle state); region borders carry a second layer of stained glass (raised sulci). Seven camera presets (`brain:cam/*`).
+
+### 11.8 Verification and performance
+See `TEST_REPORT.md`: 21 of 21 checks passed. One defect was found and fixed (axon lever did not drive the gate comparator because levers give direct power only to their attached block). Tick time during a full run: mean 1.0 ms, P99 3.9 ms.
+
+### 11.9 Not verified
+Visual appearance and camera framing were not inspected in a game client.
