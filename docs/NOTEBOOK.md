@@ -223,3 +223,10 @@ Full record in `PHASE1_EVIDENCE.md`. Summary:
 - Integration: comparator readings equal the datapack outputs on all 8 channels; the max chain carries the maximum; only the maximal channel's decision comparator outputs.
 - Causality: removing one inhibition comparator made a non-maximal channel fire with unchanged datapack values. Runtime functions write only barrels, console indicator bases and lever states.
 - Stated limitation: input-to-hidden connectivity is sparse (24 fixed synapses); only hidden-to-output (128 synapses) is dense and plastic.
+
+## 13. Follow-up validation and Phase 2 (2026-11-18)
+- Hidden updates are synchronous by construction (section 8.1 of `PHASE1_EVIDENCE.md`).
+- Bounds hold for every weight configuration the plasticity rule permits; the +12 and -8 caps were reached and held in game (8.2).
+- Physical WTA: 25 of 25 vectors, including all one-hot cases, ties of 2, 3 and 8, and all-zero (8.3).
+- In-client: a real player press on RUN started computation; the parietal cortex visibly lit. Camera presets and overall lighting were found deficient (8.4).
+- Phase 2 (`PHASE2_EVIDENCE.md`): "what color is the sky when i feel sad and hear music?" was physically classified as temporal (o = 10 vs occipital 5). One TRAIN toward the measured runner-up (occipital) changed 22 hidden-to-output synapses. The rerun was physically classified as occipital (15 vs 0). After a server restart the weights were identical and the classification was unchanged.

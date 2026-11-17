@@ -112,3 +112,29 @@ Not verified:
 - Visual appearance in a game client (all tests ran on a headless server).
 - A click by a real player: the button was set to its pressed state with `setblock`, which the poller treats the same way.
 - Behaviour on Lunar Client specifically: it runs the same vanilla 26.3 server logic in singleplayer, but this was not observed.
+
+## 8. Follow-up checks (2026-11-18)
+
+### 8.1 Update semantics: synchronous
+Intended semantics: all 16 hidden units update synchronously from the previous step's state. `check_semantics.py` parses the generated `hidden_step.mcfunction`:
+1. The inhibition term I reads u0..u15 on lines 2 to 17. The first write to any u is on line 33. I is therefore taken entirely from the previous step.
+2. Each unit's update block reads and writes only its own u_j. Region-lesion zeroing and the copy to h come after all 16 updates (line 238).
+3. 2,000 random inputs through a sequential implementation with a random unit order equal the synchronous reference in 2,000 of 2,000 cases.
+
+So the in-game sequential command order is equivalent to the intended synchronous update, and `reference.py` implements that semantics directly (it builds a new state vector from the old one).
+
+### 8.2 Numerical bounds under every permitted learned configuration
+Permitted configurations: W and b fixed (24 synapses, b = 0), c = 0, V in [-8, 12] (the training rule clamps after every change).
+- Analytic: x in [0, 15]. The hidden drive is at most 60, so d is in [0, 15]. The update u + floor((d - u + 1)/2) always lies between u and d, so h stays in [0, 15]. The output sum lies in [-8*16*15, 12*16*15] = [-1920, 2880] before the clamp. A training delta is at most ceil(15/4) = 4, and V is re-clamped after each change, so V never leaves [-8, 12].
+- Reference fuzz (`check_bounds.py`): 20,000 configurations (all +12, all -8, alternating, uniform random), inputs random or extreme. Out-of-range activations: 0. Largest pre-clamp output sum: 1,536 (below the analytic 2,880, because the inhibition term keeps h at 8 when every input is 15).
+- In game with x = 15 on every input: all V = 12 gives o = 15 on all outputs; all V = -8 gives o = 0 on all outputs; the alternating sign pattern gives 15 on all outputs. All three match the reference exactly.
+- In game, 400 TRAIN updates with random targets and maximal activations: V stays within [-8, 8]. Then 30 consecutive updates toward one target: every synapse into it saturates at exactly 12, and no synapse went below -8.
+
+### 8.3 Physical WTA sweep (`check_wta.py`, 25 vectors, written straight into the barrels)
+25 of 25 correct. Coverage: all-zero (nothing fires, M = 0); each channel alone (one-hot, 8 cases); each channel as the unique maximum of a full random vector (8 cases); ties of 2 (channels 2+3, which is the specification vector, and channels 1+8), 3 (channels 2, 5, 7) and 8 channels (all at 1, at 7 and at 15), all of which fire every tied channel; 15 against seven 14s; and the specification unique vector. For each case the check covers the decision comparator outputs, the tract heads and the max-chain value M. Raw data: `build/wta.json`.
+
+### 8.4 In-client checks (vanilla 26.3 client, isolated game directory, test copy of the world)
+- The world loaded in the real client with no function errors (`logs/latest.log`).
+- **RUN button:** the player was aimed at the RUN button (`img/client_console_run_button.png`) and the use key was pressed through macOS. `#state` went from 0 to 1, so a player click in the client starts a computation. Verified.
+- **Anatomical illumination:** a top-down spectator view before and during a run (`img/client_cortex_idle.png`, `img/client_cortex_parietal_lit.png`). The parietal region visibly lights; o4 = 10. Verified.
+- **Visual problems found (not yet fixed):** the camera presets drop the player to the floor (creative mode, not flying); the reveal view is blocked by the balcony (`img/client_reveal_camera_broken.png`); the ring pattern of the dust mesh shows through the glass as diamonds; the scene is dark and the activation is subtle.
