@@ -1,0 +1,6 @@
+.venv/
+atlas/
+server/
+reports/
+build/
+__pycache__/
