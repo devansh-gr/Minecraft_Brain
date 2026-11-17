@@ -155,6 +155,62 @@ def pick_feed(grid, r):
 
 
 # ---------------------------------------------------------------- dust mesh design
+GLASS_INTERIOR = False   # True: tinted glass over every cell (v3 look); False: bare lamps, coloured borders
+BEAMS = 3   # beacons per region (falls back to fewer when a region has no room)
+
+
+def plan_beacons(feed, inner, hgt):
+    """Beam bank under a region. The torch on the feed block powers a dust line; branches feed sticky pistons
+    that hold shutter blocks in the beam columns. Region fires -> torch off -> all pistons retract -> beams.
+    Cells are map-grid coordinates. A piston also reads power at the space above it (quasi-connectivity), so
+    where that space is in the lamp layer (height 0) its neighbours must not carry dust."""
+    fx, fz = feed
+    for n in range(BEAMS, 0, -1):
+        for sd in (1, -1):
+            for dz in (1, -1):
+                zs = [fz + dz * 3 * k for k in range(n)]
+                torch = (fx + sd, fz)
+                line = [(fx + 2 * sd, fz + dz * t) for t in range(3 * (n - 1) + 1)]
+                branches = [(fx + 3 * sd, z) for z in zs]
+                pistons = [(fx + 4 * sd, z) for z in zs]
+                shutters = [(fx + 5 * sd, z) for z in zs]
+                columns = [(fx + 6 * sd, z) for z in zs]
+                excl = set(columns)
+                for c in [torch] + pistons:
+                    if hgt[c] == 0:
+                        excl |= {c} | {(c[0] + a, c[1] + b) for a, b in NB4}
+                if excl <= inner and all(0 <= c[0] < hgt.shape[0] and 0 <= c[1] < hgt.shape[1]
+                                          for c in line + branches + pistons + shutters):
+                    return dict(side=sd, dz=dz, torch=torch, line=line, branches=branches, pistons=pistons,
+                                shutters=shutters, columns=columns, excl=excl)
+    return None
+
+
+def build_bank(bank, M, feeds, r, MAP_Z0, color):
+    """Blocks for a beam bank (world coordinates via M). Asserts no contact with other regions' tracts."""
+    sd = bank["side"]; f = "east" if sd > 0 else "west"
+    wc = lambda c: M(*c)
+    mech = [bank["torch"]] + bank["line"] + bank["branches"] + bank["pistons"] + bank["shutters"] + bank["columns"]
+    for r2, (ox, oz) in enumerate(feeds):
+        if r2 != r:
+            for c in mech:
+                x, z = wc(c)
+                assert not (abs(x - ox) <= 1 and MAP_Z0 <= z < oz), f"beam bank of {r} touches tract of {r2}"
+    out = []
+    tx, tz = wc(bank["torch"])
+    out.append(f"setblock {tx} {L1} {tz} redstone_wall_torch[facing={f}]")
+    for c in bank["line"] + bank["branches"]:
+        x, z = wc(c)
+        out += [f"setblock {x} {L0} {z} smooth_stone", f"setblock {x} {L1} {z} redstone_wire"]
+    for p, sh, col in zip(bank["pistons"], bank["shutters"], bank["columns"]):
+        (px, pz), (sx, sz), (bx, bz) = wc(p), wc(sh), wc(col)
+        out += [f"fill {bx-1} -64 {bz-1} {bx+1} -64 {bz+1} iron_block", f"setblock {bx} -63 {bz} beacon",
+                f"fill {bx} -62 {bz} {bx} -60 {bz} glass", f"setblock {bx} {L1} {bz} air",
+                f"setblock {sx} {L1} {sz} black_concrete", f"setblock {px} {L1} {pz} sticky_piston[facing={f}]",
+                f"setblock {bx} {lab.TOP} {bz} air"]
+    return out
+
+
 def design_region(grid, r, hgt, feed):
     W, H = grid.shape
     cells = {(x, z) for x, z in zip(*np.nonzero(grid == r))}
@@ -164,19 +220,10 @@ def design_region(grid, r, hgt, feed):
                 if any(not inb(x + a, z + b) or grid[x + a, z + b] != r for a, b in NB4)}
     inner = cells - boundary
     assert feed in inner
-    # beacon shutter under the region: torch on the feed block, sticky piston, shutter block, beam column.
-    # Cells above the torch, the piston (quasi-connectivity) and the column carry no lamp/dust.
-    side = None
-    for sd in (1, -1):
-        torch, piston, column = (feed[0] + sd, feed[1]), (feed[0] + sd, feed[1] + 1), (feed[0] + 3 * sd, feed[1] + 1)
-        # the piston also reads power at the space above it (quasi-connectivity): every lamp-layer neighbour
-        # of that space must stay unpowered, so none of them may carry dust
-        qc = {(piston[0] + a, piston[1] + b) for a, b in NB4}
-        if {torch, piston, column} | qc <= inner:
-            side = sd
-            break
-    assert side, f"no room for beacon in region {r}"
-    excl = {torch, piston, column} | qc
+    bank = plan_beacons(feed, inner, hgt)
+    assert bank, f"no room for a beacon in region {r}"
+    excl = bank["excl"]
+    side, column = bank["side"], bank["columns"][0]
     mesh = inner - {feed} - excl
     d = {feed: 0}
     q = deque([feed])
@@ -237,7 +284,7 @@ def design_region(grid, r, hgt, feed):
                 changed = True
     lit = {c for c in dust if power.get(c, 0) > 0}
     return dict(cells=cells, boundary=boundary, feed=feed, dust=dust, cut=cut, reps=reps,
-                lit=lit, rings=max(zone.values()), side=side, excl=excl, column=column, caps=caps)
+                lit=lit, rings=max(zone.values()), side=side, excl=excl, column=column, caps=caps, bank=bank)
 
 
 # ---------------------------------------------------------------- helpers
@@ -300,6 +347,7 @@ def main():
     designs = [design_region(grid, r, hgt, feed_cells[r]) for r in range(N)]
     print(f"relief: max height {hgt.max()}, mean {hgt[grid != -2].mean():.1f} blocks")
     tot = sum(len(dz["dust"]) for dz in designs)
+    print("beams per region:", [len(dz["bank"]["columns"]) for dz in designs])
     print(f"map {W}x{H} = {(grid >= 0).sum()} cells, dust {tot}, "
           f"lamps lit {100 * sum(len(dz['lit']) for dz in designs) / tot:.1f}%")
     for r, dz in enumerate(designs):
@@ -379,19 +427,7 @@ def main():
         for j in range(1, hf + 1):
             T.append(f"setblock {fx} {L1 + j} {fz} {'redstone_torch' if j % 2 else 'smooth_stone'}")
         T.append(f"setblock {fx} {LAMP + hf} {fz} redstone_wire")
-        # beacon shutter: torch on the feed block (off when the region fires) holds a sticky piston extended,
-        # which keeps a block in the beam column. Region fires -> torch off -> piston retracts -> beam opens.
-        sd = designs[r]["side"]; f = "east" if sd > 0 else "west"
-        bx, bz = fx + 3 * sd, fz + 1
-        for (ox, oz), other in [((fx2, fz2), r2) for r2, (fx2, fz2) in enumerate(feeds) if r2 != r]:
-            for mx_, mz_ in [(fx + sd, fz), (fx + sd, fz + 1), (fx + 2 * sd, fz + 1), (bx, bz)]:
-                assert not (abs(mx_ - ox) <= 1 and MAP_Z0 <= mz_ < oz), f"beacon of {r} collides with tract of {other}"
-        T += [f"fill {bx-1} -64 {bz-1} {bx+1} -64 {bz+1} iron_block", f"setblock {bx} -63 {bz} beacon",
-              f"fill {bx} -62 {bz} {bx} -60 {bz} glass", f"setblock {bx} {LAMP-1} {bz} air",
-              f"setblock {fx + 2 * sd} {L1} {bz} black_concrete",
-              f"setblock {fx + sd} {L1} {fz} redstone_wall_torch[facing={f}]",
-              f"setblock {fx + sd} {L1} {bz} sticky_piston[facing={f}]",
-              f"setblock {bx} {lab.TOP} {bz} air"]
+        T += build_bank(designs[r]["bank"], M, feeds, r, MAP_Z0, REGIONS[r][1])
         # note block branch: dust off the tract at z=6 into a note block
         inst, note = REGIONS[r][3], REGIONS[r][4]
         T += [f"setblock {x0+1} {L0} 6 redstone_lamp", f"setblock {x0+1} {L1} 6 redstone_wire",
@@ -418,7 +454,8 @@ def main():
             x, z = M(*c)
             C.append(f"setblock {x} {MESH + int(hgt[c])} {z} repeater[facing={FACE[fl]},delay={RING_DELAY}]")
     for r, dz in enumerate(designs):
-        C += hfills(dz["cells"], MESH + 1, f"{REGIONS[r][1]}_stained_glass")
+        tint = dz["cells"] if GLASS_INTERIOR else dz["boundary"] | set(dz["bank"]["columns"])
+        C += hfills(tint, MESH + 1, f"{REGIONS[r][1]}_stained_glass")
         C += hfills(dz["boundary"], MESH + 2, f"{REGIONS[r][1]}_stained_glass")   # raised sulci
     C += hfills(stem_cells, MESH + 1, "gray_stained_glass")
     for dz in designs:
