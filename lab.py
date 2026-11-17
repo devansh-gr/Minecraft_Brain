@@ -4,7 +4,7 @@ import numpy as np
 from scipy import ndimage
 
 X0, X1, Z0, Z1 = -76, 106, -96, 186       # interior bounds
-FLOOR, TOP = -61, 0
+FLOOR, TOP = -61, 50
 NAMES = {"prefrontal": "Prefrontal · planning, emotion", "broca": "Broca · speech, grammar",
          "motor": "Motor · movement", "somato": "Somatosensory · touch, pain",
          "parietal": "Parietal · number, space", "temporal": "Temporal · sound, memory, meaning",
@@ -104,5 +104,60 @@ def composition(ring_outer, M, fills):
     for x in range(X0 + 6, X1, 14):                                        # soft ambient above the floor,
         for z in range(Z0 + 6, Z1, 14):                                    # never inside the brain's footprint
             if not (bx0 - 2 <= x <= bx1 + 2 and bz0 - 2 <= z <= bz1 + 2):
+                L.append(f"setblock {x} -48 {z} light[level=9]")
+    return L
+
+
+UPRIGHT_CAMERAS = {  # name: (x, y, z, yaw, pitch)
+    "1_reveal": (16, -58.4, 8, 0, -12), "2_input": (8, -57.4, -79, 0, 25), "3_processor": (16, -40, -70, 0, 62),
+    "4_decision": (16, -44, -28, 0, 58), "5_axons": (16, -50, 30, 0, -5), "6_three_quarter": (-50, -40, 22, -38, 4),
+    "7_wide": (16, -14, -92, 0, 16), "8_side": (-72, -32, 108, -90, 4), "9_front_close": (16, -50, 40, 0, -18)}
+
+
+def build_upright(U, region_labels, colors, fills3):
+    """Lab shell around the upright brain: pedestal, lighting hierarchy, titles."""
+    global CAMERAS
+    CAMERAS = UPRIGHT_CAMERAS
+    L = ["kill @e[type=text_display,tag=lab]", f"fill {X0} {FLOOR} {Z0} {X1} {FLOOR} {Z1} polished_deepslate replace grass_block"]
+    for x in range(X0, X1 + 1, 24):
+        L.append(f"fill {x} {FLOOR} {Z0} {x} {FLOOR} {Z1} deepslate_tiles replace polished_deepslate")
+    for (a, b, c, d) in [(X0 - 1, Z0 - 1, X1 + 1, Z0 - 1), (X0 - 1, Z1 + 1, X1 + 1, Z1 + 1),
+                         (X0 - 1, Z0 - 1, X0 - 1, Z1 + 1), (X1 + 1, Z0 - 1, X1 + 1, Z1 + 1)]:
+        L += [f"fill {a} {FLOOR} {b} {c} {TOP} {d} polished_blackstone_bricks", f"fill {a} -50 {b} {c} -46 {d} tinted_glass",
+              f"fill {a} -58 {b} {c} -58 {d} waxed_oxidized_cut_copper"]
+    for x in range(X0, X1 + 1, 16):
+        for z in (Z0, Z1):
+            L += [f"fill {x} {FLOOR+1} {z} {x} {TOP-1} {z} deepslate_tiles", f"fill {x} -52 {z} {x} -44 {z} sea_lantern"]
+    for z in range(Z0, Z1 + 1, 16):
+        for x in (X0, X1):
+            L += [f"fill {x} {FLOOR+1} {z} {x} {TOP-1} {z} deepslate_tiles", f"fill {x} -52 {z} {x} -44 {z} sea_lantern"]
+    L.append(f"fill {X0-1} {TOP} {Z0-1} {X1+1} {TOP} {Z1+1} black_stained_glass")
+    # pedestal under the brain (tracts run inside it at y -59; they are placed after this)
+    foot = U["footprint"]
+    ped = [(x, y, z) for x, z in foot for y in (-60, -59, -58)]
+    L += fills3(ped, "polished_blackstone") + fills3([(x, -57, z) for x, z in foot], "waxed_oxidized_cut_copper")
+    x0, x1, y0, y1, z0, z1 = U["stats"]["bbox"]
+    L += composition_upright(x0, x1, z0, z1)
+    L.append(td(16, y1 + 6, z0 - 4, "E · ANATOMICAL BRAIN\nMNI152 tissue + Harvard-Oxford atlas, upright, left hemisphere facing you", 4, "aqua", width=700))
+    for rid, x, z, y in region_labels:
+        L.append(td(x, y, z, NAMES[rid].split(" · ")[0], 3, TEXT_COLOR.get(colors[rid], "white"), bb="center"))
+    L.append(td(x0 - 6, -40, z0, "REGIONS\n" + "\n".join(NAMES[r] for r in NAMES), 1.6, "white", width=400))
+    L.append(td(16, -30, -88, "REDSTONE CORTEX\na neuroscience-inspired circuit model in vanilla Minecraft", 3, "white", width=700))
+    return L
+
+
+def composition_upright(x0, x1, z0, z1):
+    L = []
+    flo = lambda a, b, c, d, blk: f"fill {a} {FLOOR} {b} {c} {FLOOR} {d} {blk} replace polished_deepslate"
+    L += [flo(12, Z0, 20, z0 - 3, "polished_blackstone_bricks"), flo(11, Z0, 11, z0 - 3, "sea_lantern"),
+          flo(21, Z0, 21, z0 - 3, "sea_lantern")]
+    for (a, b, c, d) in [(-20, -86, 36, -68), (-4, -66, 36, -26), (-6, -24, 38, 46), (x0 - 4, z0 - 4, x1 + 4, z1 + 4)]:
+        L += [flo(a, b, c, b, "sea_lantern"), flo(a, d, c, d, "sea_lantern"), flo(a, b, a, d, "sea_lantern"), flo(c, b, c, d, "sea_lantern")]
+    for (a, b, c, d) in [(X0, Z0, X1, Z0), (X0, Z1, X1, Z1), (X0, Z0, X0, Z1), (X1, Z0, X1, Z1)]:
+        L += [f"fill {a} -40 {b} {c} -40 {d} sea_lantern", f"fill {a} -20 {b} {c} -20 {d} sea_lantern",
+              f"fill {a} 0 {b} {c} 0 {d} sea_lantern", f"fill {a} 20 {b} {c} 20 {d} sea_lantern"]
+    for x in range(X0 + 6, X1, 14):
+        for z in range(Z0 + 6, Z1, 14):
+            if not (x0 - 3 <= x <= x1 + 3 and z0 - 3 <= z <= z1 + 3):
                 L.append(f"setblock {x} -48 {z} light[level=9]")
     return L

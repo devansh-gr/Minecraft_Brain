@@ -34,6 +34,6 @@ E4_Q = ["what is seven", "times eight?"]
 INJ = {"a": [2, 5, 11, 4, 7, 3, 1, 6], "b": [2, 11, 11, 4, 7, 3, 1, 6]}
 
 # clock (game ticks after RUN)
-T_IN, T_H, T_OUT, T_RAMP0, RAMP_DT, T_EXC, T_READ, T_DECAY, T_IDLE = 1, [12, 24, 36, 48], 60, 70, 6, 250, 380, 560, 580
+T_IN, T_H, T_OUT, T_RAMP0, RAMP_DT, T_EXC, T_READ, T_DECAY, T_IDLE = 1, [12, 24, 36, 48], 60, 70, 6, 250, 560, 760, 780
 
 

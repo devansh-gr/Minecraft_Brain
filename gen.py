@@ -12,7 +12,7 @@ import nibabel as nib
 from scipy import ndimage
 from nilearn import datasets, image
 from lexicon import LEX
-import dp as net, lab
+import dp as net, lab, upright
 
 ROOT = Path(__file__).parent
 DP = ROOT / "build" / "datapack" / "redstone_cortex"
@@ -107,7 +107,8 @@ def lateral_map():
 
 
 # ---------------------------------------------------------------- 3D relief from the volumetric surface
-RELIEF = True          # False -> flat map (v3 fallback)
+MODE = "upright"      # "upright": volumetric brain (upright.py); "relief": v3.2 relief map
+RELIEF = True          # (relief mode) False -> flat map (v3 fallback)
 RELIEF_SCALE = 0.45    # fraction of the true lateral bulge kept (slope must stay <= 1 block per block)
 HMAX = 16
 TERRACE = 3
@@ -303,6 +304,25 @@ def runs(points, y):
     return [f"fill {a} {y} {z} {b} {y} {z}" for a, z, b in res]
 
 
+def fills3(points, block):
+    """(x, y, z) points -> x-run fill commands."""
+    byyz = {}
+    for x, y, z in points:
+        byyz.setdefault((y, z), []).append(x)
+    out = []
+    for (y, z), xs in sorted(byyz.items()):
+        xs.sort()
+        a = b = xs[0]
+        for x in xs[1:] + [None]:
+            if x is not None and x == b + 1:
+                b = x
+                continue
+            out.append(f"fill {a} {y} {z} {b} {y} {z} {block}")
+            if x is not None:
+                a = b = x
+    return out
+
+
 def fills(points, y, block):
     return [f"{f} {block}" for f in runs(points, y)]
 
@@ -356,6 +376,11 @@ def main():
 
     M = lambda x, z: (int(mx0 + x), int(MAP_Z0 + z))  # map cell -> world x,z
     feeds = [M(*dz["feed"]) for dz in designs]
+    U = None
+    if MODE == "upright":
+        U = upright.build(ROOT, REGIONS, STEM, fills3)
+        feeds = [U["base"][r] for r in range(N)]
+        print("upright:", U["stats"])
     # board column order follows feed x so tracts never cross
     order = sorted(range(N), key=lambda r: feeds[r][0])
     xs = [feeds[r][0] for r in order]
@@ -414,13 +439,19 @@ def main():
         step = 1 if fx > x0 else -1
         path += [(x, tz) for x in range(x0 + step, fx + step, step)] if fx != x0 else []
         path += [(fx, z) for z in range(tz + 1, fz)]
-        lampsup = lambda x, z: "redstone_lamp" if z < MAP_Z0 else "smooth_stone"
+        front = min(z for x, z in U["footprint"]) if U else MAP_Z0
+        lampsup = lambda x, z: "redstone_lamp" if z < front else "smooth_stone"
         route(path, L0, L1, lampsup, T, delay=2)
         T += [f"setblock {x0} {L1} 12 comparator[facing=north,mode=subtract]",
               f"setblock {x0+1} {L0} 12 glass", f"setblock {x0+1} {L1} 12 redstone_wire",
               f"setblock {x0+2} {L0} 12 redstone_lamp", f"setblock {x0+2} {L1} 12 lever[face=floor,facing=north]"]
         T.append(f"setblock {fx} {L1} {fz} smooth_stone")       # feed block (strongly powered by the tract)
         T.append(f"setblock {fx} {L0} {fz} smooth_stone")
+        if U:                                                   # upright: the ladder comes with the brain
+            inst, note = REGIONS[r][3], REGIONS[r][4]
+            T += [f"setblock {x0+1} {L0} 6 redstone_lamp", f"setblock {x0+1} {L1} 6 redstone_wire",
+                  f"setblock {x0+2} {L0} 6 {inst}", f"setblock {x0+2} {L1} 6 note_block[note={note}]"]
+            continue
         # torch ladder up to the relief: torch, block, torch, block ... each torch inverts, so a feed height
         # that is a multiple of 4 keeps the top block powered exactly when the tract is
         hf = int(hgt[feed_cells[r]])
@@ -461,6 +492,8 @@ def main():
     for dz in designs:
         C += hfills(dz["caps"], MESH + 1, "redstone_lamp")
 
+    if U:
+        C = U["cmds"]
     # ---------------- datapack logic, console, lab
     lc = {ch: ch for ch in "abcdefghijklmnopqrstuvwxyz"}
     lc.update({ch.upper(): ch for ch in "abcdefghijklmnopqrstuvwxyz"})
@@ -471,7 +504,11 @@ def main():
         for word in words.split():
             kw.setdefault(word, {"r": rid})
     print(f"lexicon {len(kw)} words")
-    info = net.emit(w, REGIONS, col, feeds, lc, kw, [LAMP + int(hgt[f]) for f in feed_cells])
+    if U:
+        info = net.emit(w, REGIONS, col, [(U["probe"][r][0], U["probe"][r][2]) for r in range(N)], lc, kw,
+                        [U["probe"][r][1] for r in range(N)])
+    else:
+        info = net.emit(w, REGIONS, col, feeds, lc, kw, [LAMP + int(hgt[f]) for f in feed_cells])
     colors = {reg[0]: reg[1] for reg in REGIONS}
     w("build_console", net.console(info["cx"], info["R"], colors))
     w("build_labels", net.labels(info["cx"], info["R"]))
@@ -480,20 +517,37 @@ def main():
         xs_, zs_ = zip(*dz["cells"])
         lx, lz = int(np.mean(xs_)), int(np.mean(zs_))
         region_labels.append((REGIONS[r][0], *M(lx, lz), MESH + 1 + max(int(hgt[c]) for c in dz["cells"]) + 6))
-    w("build_lab", lab.build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills, hgt))
+    if U:
+        region_labels = []
+        for r in range(N):
+            pts = U["lit"][r]
+            region_labels.append((REGIONS[r][0], int(np.mean([p[0] for p in pts])), min(p[2] for p in pts) - 8,
+                                  int(np.mean([p[1] for p in pts]))))
+        w("build_lab", lab.build_upright(U, region_labels, colors, fills3))
+    else:
+        w("build_lab", lab.build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills, hgt))
     lab.cameras(w)
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
-    w("build", ["gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
+    w("build", ["gamerule max_command_sequence_length 10000000", "gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
-                f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {LAMP + HMAX + 4} {MAP_Z0+H+1} air",
+                *([f"fill {U['stats']['bbox'][0]-2} {y} {U['stats']['bbox'][4]-2} {U['stats']['bbox'][1]+2} {min(y + 7, U['stats']['bbox'][3] + 2)} {U['stats']['bbox'][5]+2} air"
+                   for y in range(-57, U['stats']['bbox'][3] + 3, 8)]
+                  + [f"fill {min(U['stats']['bbox'][0], -60) - 2} -60 22 {max(U['stats']['bbox'][1], 40) + 2} -58 {U['stats']['bbox'][5] + 2} air"]
+                  if U else
+                  [f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {LAMP + HMAX + 4} {MAP_Z0+H+1} air"]),
                 "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
                 "function brain:build_cortex", "function brain:build_console", "function brain:load",
                 "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show"])
     w("build_board", B); w("build_tracts", T); w("build_cortex", C)
 
     # test hook: list of lamp cells that must light per region
+    if U:
+        (ROOT / "build" / "expect.json").write_text(json.dumps({
+            REGIONS[r][0]: {"feed": U["base"][r], "probe": U["probe"][r], "lit": U["lit"][r], "x": info["cx"][REGIONS[r][0]],
+                            "idx": r} for r in range(N)}))
+        return
     (ROOT / "build" / "expect.json").write_text(json.dumps({
         REGIONS[r][0]: {"feed": M(*dz["feed"]), "lit": [(M(*c)[0], LAMP + int(hgt[c]), M(*c)[1]) for c in sorted(dz["lit"])], "x": info["cx"][REGIONS[r][0]],
                         "idx": r} for r, dz in enumerate(designs)}))
