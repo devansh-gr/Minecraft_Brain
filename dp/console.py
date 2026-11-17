@@ -85,6 +85,10 @@ def labels(cx, R):
     td(16, L1 + 4, CZ - 4, "A · INPUT TERMINAL", 1.4, (), "aqua", width=500)
     for i, r in enumerate(R):
         td(cx[r] + 0.5, L1 + 1.2, -26.5, NAMES[r], 0.4)
+    hx = [cx[r] for r in R] + [4 * m + 2 for m in range(len(PAIRS))]
+    hn = [f"P {NAMES[r][:5]}" for r in R] + [f"A {NAMES[a][:3]}+{NAMES[b][:3]}" for a, b in PAIRS]
+    for j, x in enumerate(hx):
+        td(x + 0.5, L1 + (1.2 if j < len(R) else 2.0), -47.5, hn[j], 0.32, (), "aqua" if j < len(R) else "light_purple")
     td(50, L1 + 5, CZ + 0.5, EXPERIMENTS, 0.7, (), "white", width=520)
     td(-26, L1 + 5, -60, HOWTO, 0.7, (), "white", width=420)
     return out

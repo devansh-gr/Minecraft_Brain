@@ -10,7 +10,7 @@ Every shot shows real in-world behaviour. Camera presets are functions: `/functi
 | 12-16 s | Decision | `cam/4_decision` (16, -49, -26, pitch 48) | Output bars die from weakest to strongest; the winner remains | "Redstone comparators kill the weaker signals" |
 | 16-20 s | Brain fires | `cam/5_axons` (16, -51, -2), then `cam/6_brain_top` | Pulse runs down the lamp axon; parietal lights ring by ring | |
 | 20-25 s | Damage | `cam/4_decision` then `cam/6_brain_top` | Pull the Parietal axon lever, RUN again: board shows the decision, brain stays dark, BLOCKED lamp on | "Cut the axon: it still thinks, but the signal never arrives" |
-| 25-30 s | Repair + wide | `cam/7_wide` (-62, -40, -70) | Push the lever back, RUN: region lights again | "Redstone + a datapack. No mods." |
+| 25-30 s | Repair + wide | `cam/7_wide` (16, -14, -92) | Push the lever back, RUN: region lights again | "Redstone + a datapack. No mods." |
 
 Separate learning clip (about 15 s): EXP 3, RUN (tie: temporal and visual both light), TRAIN, RUN (only visual lights). Show the TRAINED panel with the synapse counts.
 

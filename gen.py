@@ -118,7 +118,20 @@ def design_region(grid, r):
         msk[x, z] = True
     dist = ndimage.distance_transform_cdt(msk, metric="taxicab")
     feed = tuple(int(v) for v in np.unravel_index(np.argmax(dist), dist.shape))
-    mesh = inner - {feed}
+    # beacon shutter under the region: torch on the feed block, sticky piston, shutter block, beam column.
+    # Cells above the torch, the piston (quasi-connectivity) and the column carry no lamp/dust.
+    side = None
+    for sd in (1, -1):
+        torch, piston, column = (feed[0] + sd, feed[1]), (feed[0] + sd, feed[1] + 1), (feed[0] + 3 * sd, feed[1] + 1)
+        # the piston also reads power at the space above it (quasi-connectivity): every lamp-layer neighbour
+        # of that space must stay unpowered, so none of them may carry dust
+        qc = {(piston[0] + a, piston[1] + b) for a, b in NB4}
+        if {torch, piston, column} | qc <= inner:
+            side = sd
+            break
+    assert side, f"no room for beacon in region {r}"
+    excl = {torch, piston, column} | qc
+    mesh = inner - {feed} - excl
     d = {feed: 0}
     q = deque([feed])
     while q:
@@ -129,14 +142,17 @@ def design_region(grid, r):
                 d[n] = d[(x, z)] + 1
                 q.append(n)
     mesh = {c for c in mesh if c in d}                  # unreachable bits become plain lamps
-    cut = {c for c in mesh if d[c] % (RING + 1) == 0}
+    # circular rings: zone = floor(euclidean distance / (RING+1)); a cell is a cut cell if a 4-neighbour
+    # lies in a lower zone. Zones change by at most 1 between neighbours, so cuts separate them.
+    zone = {c: int(math.hypot(c[0] - feed[0], c[1] - feed[1]) // (RING + 1)) for c in mesh}
+    cut = {c for c in mesh if any(zone.get((c[0] + a, c[1] + b), zone[c]) < zone[c] for a, b in NB4)}
     reps = {}
-    for c in sorted(cut, key=lambda c: (d[c], c)):
+    for c in sorted(cut, key=lambda c: (zone[c], c)):
         x, z = c
         for a, b in NB4:
             back, front = (x - a, z - b), (x + a, z + b)
             if back in mesh and front in mesh and back not in cut and front not in cut \
-                    and d[back] == d[c] - 1 and d[front] == d[c] + 1 \
+                    and zone[back] < zone[c] and zone[front] == zone[c] \
                     and not any((x + p, z + s) in reps for p, s in NB4):
                 reps[c] = (a, b)                        # signal flows along (a, b)
                 break
@@ -167,7 +183,7 @@ def design_region(grid, r):
                 changed = True
     lit = {c for c in dust if power.get(c, 0) > 0}
     return dict(cells=cells, boundary=boundary, feed=feed, dust=dust, cut=cut, reps=reps,
-                lit=lit, rings=max(d.values()) // (RING + 1))
+                lit=lit, rings=max(zone.values()), side=side, excl=excl, column=column)
 
 
 # ---------------------------------------------------------------- helpers
@@ -301,6 +317,19 @@ def main():
         T.append(f"setblock {fx} {L1} {fz} smooth_stone")       # feed block, dust on top climbs into the mesh
         T.append(f"setblock {fx} {L0} {fz} smooth_stone")
         T.append(f"setblock {fx} {LAMP} {fz} redstone_wire")
+        # beacon shutter: torch on the feed block (off when the region fires) holds a sticky piston extended,
+        # which keeps a block in the beam column. Region fires -> torch off -> piston retracts -> beam opens.
+        sd = designs[r]["side"]; f = "east" if sd > 0 else "west"
+        bx, bz = fx + 3 * sd, fz + 1
+        for (ox, oz), other in [((fx2, fz2), r2) for r2, (fx2, fz2) in enumerate(feeds) if r2 != r]:
+            for mx_, mz_ in [(fx + sd, fz), (fx + sd, fz + 1), (fx + 2 * sd, fz + 1), (bx, bz)]:
+                assert not (abs(mx_ - ox) <= 1 and MAP_Z0 <= mz_ < oz), f"beacon of {r} collides with tract of {other}"
+        T += [f"fill {bx-1} -64 {bz-1} {bx+1} -64 {bz+1} iron_block", f"setblock {bx} -63 {bz} beacon",
+              f"fill {bx} -62 {bz} {bx} -60 {bz} glass", f"setblock {bx} {LAMP-1} {bz} air",
+              f"setblock {fx + 2 * sd} {L1} {bz} black_concrete",
+              f"setblock {fx + sd} {L1} {fz} redstone_wall_torch[facing={f}]",
+              f"setblock {fx + sd} {L1} {bz} sticky_piston[facing={f}]",
+              f"setblock {bx} -36 {bz} air"]
         # note block branch: dust off the tract at z=6 into a note block
         inst, note = REGIONS[r][3], REGIONS[r][4]
         T += [f"setblock {x0+1} {L0} 6 redstone_lamp", f"setblock {x0+1} {L1} 6 redstone_wire",
@@ -313,7 +342,8 @@ def main():
     for r, dz in enumerate(designs):
         color = f"{REGIONS[r][1]}_concrete"
         C += fills([M(*c) for c in dz["boundary"]], LAMP, color)
-        lamps = dz["cells"] - dz["boundary"] - {dz["feed"]}
+        lamps = dz["cells"] - dz["boundary"] - {dz["feed"]} - dz["excl"]
+        C += fills([M(*c) for c in dz["excl"]], LAMP, "glass")
         C += fills([M(*c) for c in lamps], LAMP, "redstone_lamp")
     for r, dz in enumerate(designs):
         C += fills([M(*c) for c in dz["dust"]], MESH, "redstone_wire")
@@ -347,7 +377,7 @@ def main():
     lab.cameras(w)
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
-    w("build", ["gamerule command_block_output false",
+    w("build", ["gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
                 f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {MESH+2} {MAP_Z0+H+1} air",

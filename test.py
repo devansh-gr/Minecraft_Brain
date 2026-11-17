@@ -62,6 +62,14 @@ def idle():
     cmd("function brain:ui/reset")
 
 
+def wait_complete(limit=40):
+    """Block until the readout has run (state COMPLETE) instead of sleeping a fixed time."""
+    for _ in range(limit * 2):
+        if score("#state", "brain.st") == 2:
+            return
+        time.sleep(0.5)
+
+
 RESULTS = []
 
 
@@ -107,7 +115,7 @@ def t5():
 def t5b():
     out = {}
     for key, vecv, want in [("a", [2, 5, 11, 4, 7, 3, 1, 6], [2]), ("b", [2, 11, 11, 4, 7, 3, 1, 6], [1, 2])]:
-        idle(); cmd(f"function brain:dbg/inject_{key}"); time.sleep(RUN_WAIT - 4)
+        idle(); cmd(f"function brain:dbg/inject_{key}"); wait_complete()
         out[key] = (fired(), lamp_on(24))
         out[key + "_ok"] = out[key][0] == [CH[c] for c in want] and out[key][1] == (len(want) > 1)
     check(5, "Spec vectors on the physical circuit", "[2,5,11,4,7,3,1,6] -> channel 3 only; [2,11,11,...] -> channels 2+3, TIE lamp",

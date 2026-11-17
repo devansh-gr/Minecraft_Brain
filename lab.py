@@ -12,10 +12,10 @@ NAMES = {"prefrontal": "Prefrontal · planning, emotion", "broca": "Broca · spe
 TEXT_COLOR = {"light_blue": "aqua", "purple": "light_purple", "red": "red", "orange": "gold",
               "yellow": "yellow", "lime": "green", "blue": "blue", "pink": "light_purple"}
 
-CAMERAS = {  # name: (x, y, z, yaw, pitch)
-    "1_reveal": (16, -38, 22, 0, 32), "2_input": (8, -57.5, -82, 0, 12), "3_processor": (16, -49, -80, 0, 38),
-    "4_decision": (16, -49, -26, 0, 48), "5_axons": (16, -51, -2, 0, 22), "6_brain_top": (16, -18, 107, 0, 90),
-    "7_wide": (-62, -40, -70, -40, 18)}
+CAMERAS = {  # name: (x, y, z, yaw, pitch); spectator mode so the camera stays put
+    "1_reveal": (16, -28, 18, 0, 30), "2_input": (8, -57.4, -79, 0, 25), "3_processor": (16, -40, -70, 0, 62),
+    "4_decision": (16, -44, -28, 0, 58), "5_axons": (16, -48, -8, 0, 28), "6_brain_top": (16, -4, 107, 180, 90),
+    "7_wide": (16, -14, -92, 0, 24)}
 
 
 def td(x, y, z, text, scale, color="white", tag="lab", bb="vertical", width=400):
@@ -58,13 +58,16 @@ def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
     L += fills(pts, -58, "polished_blackstone") + fills(pts, -57, "waxed_oxidized_cut_copper")
     L += fills(pts, -56, "tinted_glass")
 
-    # observation balcony north of the brain, above the axon fan
-    L += [f"fill -44 -47 34 76 -47 40 polished_deepslate", f"fill -44 -46 40 76 -46 40 tinted_glass",
-          f"fill -44 -48 34 76 -48 34 waxed_oxidized_cut_copper"]
+    # soft ambient light over the cortex so idle anatomy reads (invisible light blocks)
+    for x in range(0, W, 7):
+        for z in range(0, H, 7):
+            if brain[x, z]:
+                wx, wz = M(x, z)
+                L.append(f"setblock {wx} -51 {wz} light[level=6]")
+    # (an observation balcony was removed after in-client screenshots showed it hiding the brain)
+    L.append("fill -44 -48 34 76 -46 40 air")
     for x in range(-44, 77, 12):
-        if all(abs(x - f) > 2 for f in fx):
-            L += [f"fill {x} {FLOOR+1} 37 {x} -48 37 deepslate_tiles"]
-
+        L.append(f"fill {x} {FLOOR+1} 37 {x} -49 37 air replace deepslate_tiles")
     # titles, legend, region labels
     L.append(td(16, -42, 44, "E · ANATOMICAL BRAIN\nleft hemisphere, Harvard-Oxford atlas, 12,856 lamp neurons", 3, "aqua", width=600))
     legend = "\n".join(NAMES[r] for r in NAMES)
@@ -77,4 +80,4 @@ def build(mx0, W, H, MAP_Z0, grid, M, region_labels, feeds, colors, fills):
 
 def cameras(w):
     for name, (x, y, z, yaw, pitch) in CAMERAS.items():
-        w(f"cam/{name}", [f"tp @p {x} {y} {z} {yaw} {pitch}"])
+        w(f"cam/{name}", ["gamemode spectator @p", f"tp @p {x} {y} {z} {yaw} {pitch}"])
