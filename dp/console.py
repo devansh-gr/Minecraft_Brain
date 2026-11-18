@@ -94,7 +94,7 @@ def labels(cx, R):
     td(16, L1 + 8, LZ, "READY · write a question, press RUN", 1.6, ("status",), "white", width=600)
     td(16, L1 + 5, -46, "B · NEURAL PROCESSOR\ninput layer (8)  ·  hidden layer (16, leaky)", 1.2, (), "aqua", width=500)
     td(16, L1 + 4, -12, "C · INHIBITORY COMPUTER\noutput neurons compete (comparator winner-take-all)", 1.2, (), "aqua", width=500)
-    td(16, L1 + 4, 14, "D · AXONS\nlever on each line = axon lesion", 1.2, (), "aqua", width=500)
+    td(-8, L1 + 2, 14, "D · AXONS\nlever on each line = axon lesion", 1.2, (), "aqua", width=500)
     td(16, L1 + 4, CZ - 4, "A · INPUT TERMINAL", 1.4, (), "aqua", width=500)
     for i, r in enumerate(R):
         td(cx[r] + 0.5, L1 + 1.2, -26.5, NAMES[r], 0.4)

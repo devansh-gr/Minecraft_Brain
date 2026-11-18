@@ -20,6 +20,7 @@ BASE_Y = -56                # lowest brain voxel (pedestal below)
 CX = 16                     # world x of the brain's anterior-posterior centre
 FRONT_Z = 64                # world z of the leftmost (north-facing) voxel
 L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
+MAX_EXPOSED = 6             # preferred max height of ladder visible below the brain (blocks)
 RING = 8                    # dust cells between repeater rings on a plate
 LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
 RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
@@ -137,7 +138,10 @@ def build(root, regions, stem_index, fills3):
         near = ndimage.binary_dilation(other, structure=ndimage.generate_binary_structure(2, 1))
         return a & b & ~near
 
-    # one ladder per region: the column whose plates (4-connected pieces through it) cover the most cells
+    # one ladder per region: among columns whose underside is close to the floor (short exposed ladder),
+    # the one whose plates (4-connected pieces through it) cover the most cells
+    proj = T.any(axis=2)
+    low = np.where(proj, np.argmax(T, axis=2), T.shape[2])
     ladders, taken_x = {}, []
     for r in sorted(range(N), key=lambda r: -int(((Lb == r) & left).sum())):
         score = np.zeros(T.shape[:2])
@@ -147,7 +151,10 @@ def build(root, regions, stem_index, fills3):
             if n:
                 sizes = np.concatenate([[0], ndimage.sum(m, comp, range(1, n + 1))])
                 score += sizes[comp] * ndimage.binary_erosion(m)        # ladder needs dust on all four sides
-        for i, j in sorted(zip(*np.nonzero(score)), key=lambda p: -score[p]):
+        cand = sorted(zip(*np.nonzero(score)), key=lambda p: -score[p])
+        best = score[cand[0]]
+        short = [p for p in cand if low[p] - k0 <= MAX_EXPOSED and score[p] >= 0.5 * best]
+        for i, j in short + cand:
             x = W(i, j, 0)[0]
             if all(abs(x - t) >= 3 for t in taken_x):
                 ladders[r] = (int(i), int(j))
@@ -222,6 +229,15 @@ def build(root, regions, stem_index, fills3):
             if (li + a, lj + b) in plates[(r, top_k[r])]["dust"]:
                 probe[r] = W(li + a, lj + b, top_k[r])
                 break
+    # cradle: a dark stand under the brain, inset from the silhouette, that also encases every ladder below it
+    stand = np.zeros(proj.shape, bool)
+    for li, lj in ladders.values():
+        stand[max(li - 1, 0):li + 2, max(lj - 1, 0):lj + 2] = True
+    for i, j in zip(*np.nonzero(stand)):
+        for k in range(k0, min(low[i, j], T.shape[2])):
+            p = W(i, j, k)
+            if p not in blocks:
+                blocks[p] = "polished_blackstone"
     # emit: everything is set from the bottom up so torches always have support
     FACE = {(0, 1): "north", (0, -1): "south", (1, 0): "west", (-1, 0): "east"}
     out = []
@@ -230,7 +246,7 @@ def build(root, regions, stem_index, fills3):
         if isinstance(blk, tuple):
             continue
         by.setdefault(blk, []).append(p)
-    order = [b for b in by if "glass" in b or "concrete" in b] + ["redstone_lamp", "smooth_stone", "redstone_torch", "redstone_wire"]
+    order = [b for b in by if "glass" in b or "concrete" in b or b == "polished_blackstone"] + ["redstone_lamp", "smooth_stone", "redstone_torch", "redstone_wire"]
     for blk in order:
         out += fills3(by.get(blk, []), blk)
     for p, blk in blocks.items():
@@ -249,7 +265,8 @@ def build(root, regions, stem_index, fills3):
     halo_pts = [W(a, b, c) for a, b, c in zip(hi[sel], hj[sel], hk[sel])
                 if W(a, b, c)[1] > -56 and W(a, b, c) not in blocks and W(a, b, c)[0::2] not in ladder_cols]
     out += fills3(halo_pts, "light[level=8]")
-    stats = dict(voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
+    exposed = {regions[r][0]: int(low[li, lj] - k0) for r, (li, lj) in ladders.items()}
+    stats = dict(exposed=exposed, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
                 footprint={(x, z) for x, y, z in blocks if y <= BASE_Y + 2})
