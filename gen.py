@@ -388,7 +388,7 @@ def main():
     col = {r: k for k, r in enumerate(order)}      # region -> board column
 
     # ---------------- board
-    B = [f"fill -4 {L0-1} -32 36 {L1+2} 44 air", f"fill -4 {L0-1} -32 36 {L0-1} 44 polished_andesite"]
+    B = [f"fill -4 {L0-1} -24 36 {L1+2} 44 air", f"fill -4 {L0-1} -24 36 {L0-1} 44 polished_andesite"]
     sup = lambda x, z: B.append(f"setblock {x} {L0} {z} smooth_stone")
     cmp_ = lambda x, y, z, f: B.append(f"setblock {x} {y} {z} comparator[facing={f},mode=compare]")
     blk = lambda x, y, z, b: B.append(f"setblock {x} {y} {z} {b}")
