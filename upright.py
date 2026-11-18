@@ -20,7 +20,8 @@ BASE_Y = -56                # lowest brain voxel (pedestal below)
 CX = 16                     # world x of the brain's anterior-posterior centre
 FRONT_Z = 64                # world z of the leftmost (north-facing) voxel
 L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
-RING = 9                    # dust cells between repeater rings on a plate
+RING = 5                    # dust cells between repeater rings on a plate
+BAND = 4                    # plate cells kept within this distance of the plate edge
 NB4 = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 
@@ -161,7 +162,15 @@ def build(root, regions, stem_index, fills3):
         foreign = set().union(*[lad_cells[o] for o in ladders if o != r])
         for k in plate_k:
             m = pmask(r, k)
-            cells = {(int(a), int(b)) for a, b in zip(*np.nonzero(m))} - foreign
+            # keep only a band behind the surface (interior lamps are invisible but cost light updates),
+            # joined to the ladder by four straight spokes
+            band = m & (ndimage.distance_transform_cdt(np.pad(m, 1), metric="taxicab")[1:-1, 1:-1] <= BAND)
+            for da, db in NB4:
+                a_, b_ = li, lj
+                while 0 <= a_ < m.shape[0] and 0 <= b_ < m.shape[1] and m[a_, b_]:
+                    band[a_, b_] = True
+                    a_, b_ = a_ + da, b_ + db
+            cells = {(int(a), int(b)) for a, b in zip(*np.nonzero(band))} - foreign
             if (li, lj) not in cells or not all((li + a, lj + b) in cells for a, b in NB4):
                 continue
             d = design_plate(cells, (li, lj))
@@ -179,7 +188,7 @@ def build(root, regions, stem_index, fills3):
     # voxels touching a plate lamp become lamps (only when every plate lamp they touch is their own region's)
     owner = {}
     for (r, k), d in plates.items():
-        for a, b in d["mesh"]:
+        for a, b in d["lit"]:                 # only lamps that actually carry powered dust
             owner[(a, b, k - 1)] = r
     touch = {}
     for (a, b, k), r in owner.items():
@@ -229,7 +238,7 @@ def build(root, regions, stem_index, fills3):
     ladder_cols = {W(li, lj, 0)[0::2] for li, lj in ladders.values()}
     halo_pts = [W(a, b, c) for a, b, c in zip(hi[sel], hj[sel], hk[sel])
                 if W(a, b, c)[1] > -56 and W(a, b, c) not in blocks and W(a, b, c)[0::2] not in ladder_cols]
-    out += fills3(halo_pts, "light[level=11]")
+    out += fills3(halo_pts, "light[level=8]")
     stats = dict(voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
