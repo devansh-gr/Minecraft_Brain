@@ -442,6 +442,10 @@ def main():
         front = min(z for x, z in U["footprint"]) if U else MAP_Z0
         lampsup = lambda x, z: "redstone_lamp" if z < front else "smooth_stone"
         route(path, L0, L1, lampsup, T, delay=2)
+        if U:   # stagger axons so tied regions never switch their plates on the same ticks
+            stag = [0, 1, 2, 3, 4, 2, 3, 1][k]
+            T += [f"setblock {x0} {L1} 10 repeater[facing=north,delay={2 + min(2, stag)}]",
+                  f"setblock {x0} {L1} 17 repeater[facing=north,delay={2 + max(0, stag - 2)}]"]
         T += [f"setblock {x0} {L1} 12 comparator[facing=north,mode=subtract]",
               f"setblock {x0+1} {L0} 12 glass", f"setblock {x0+1} {L1} 12 redstone_wire",
               f"setblock {x0+2} {L0} 12 redstone_lamp", f"setblock {x0+2} {L1} 12 lever[face=floor,facing=north]"]
@@ -529,7 +533,7 @@ def main():
     lab.cameras(w)
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
-    w("build", ["gamerule max_command_sequence_length 10000000", "gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
+    w("build", ["gamerule max_command_sequence_length 10000000", "gamerule random_tick_speed 0", "gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
                 *([f"fill {U['stats']['bbox'][0]-2} {y} {U['stats']['bbox'][4]-2} {U['stats']['bbox'][1]+2} {min(y + 7, U['stats']['bbox'][3] + 2)} {U['stats']['bbox'][5]+2} air"

@@ -20,8 +20,10 @@ BASE_Y = -56                # lowest brain voxel (pedestal below)
 CX = 16                     # world x of the brain's anterior-posterior centre
 FRONT_Z = 64                # world z of the leftmost (north-facing) voxel
 L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
-RING = 5                    # dust cells between repeater rings on a plate
-BAND = 4                    # plate cells kept within this distance of the plate edge
+RING = 8                    # dust cells between repeater rings on a plate
+LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
+RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
+BAND = 3                    # plate cells kept within this distance of the plate edge
 NB4 = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 
@@ -66,8 +68,13 @@ def shells(T):
 
 
 def design_plate(cells, feed):
-    """Flat dust plate: Euclidean repeater rings around the ladder; returns dust, reps, lit (all (a, b) cells)."""
-    mesh = set(cells) - {feed}
+    """Flat plate: every cell gets a lamp, but only the rim, the spokes and every LINE-th row carry dust.
+    A lamp under powered dust is strongly powered and lights its lamp neighbours, so the rows between dust
+    lines still light. Euclidean repeater rings give reach. Returns lamps, dust, reps, lit (dust-lit) cells."""
+    cells = set(cells)
+    rim = {q for q in cells if any((q[0] + a, q[1] + b) not in cells for a, b in NB4)}
+    lines = {q for q in cells if (q[0] - feed[0]) % LINE == 0 or q[0] == feed[0] or q[1] == feed[1]}
+    mesh = (rim | lines) - {feed}
     zone = {q: int(math.hypot(q[0] - feed[0], q[1] - feed[1]) // (RING + 1)) for q in mesh}
     # only the 4-connected piece reachable from the ladder
     seen, dq = set(), deque((feed[0] + a, feed[1] + b) for a, b in NB4)
@@ -105,7 +112,9 @@ def design_plate(cells, feed):
             if power.get(back, 0) > 0 and power.get(front, 0) < 15:
                 power[front] = 15
                 changed = True
-    return dict(mesh=mesh, dust=dust, reps=reps, lit={q for q in dust if power.get(q, 0) > 0})
+    lit = {q for q in dust if power.get(q, 0) > 0}
+    glow = lit | {(q[0] + a, q[1] + b) for q in lit for a, b in NB4 if (q[0] + a, q[1] + b) in cells}
+    return dict(lamps=cells - {feed}, mesh=mesh, dust=dust, reps=reps, lit=lit, glow=glow)
 
 
 def build(root, regions, stem_index, fills3):
@@ -178,12 +187,13 @@ def build(root, regions, stem_index, fills3):
                 continue
             plates[(r, k)] = d
             top_k[r] = k
-            for a, b in d["mesh"]:
+            for a, b in d["lamps"]:
                 blocks[W(a, b, k - 1)] = "redstone_lamp"
+            for a, b in d["mesh"]:
                 blocks[W(a, b, k)] = "redstone_wire" if (a, b) in d["dust"] else blocks.get(W(a, b, k), "air")
             for (a, b), fl in d["reps"].items():
                 blocks[W(a, b, k)] = ("repeater", fl)
-            lit3[r] += [W(a, b, k - 1) for a, b in d["lit"]]
+            lit3[r] += [W(a, b, k - 1) for a, b in d["glow"]]
     # surface stripes: a lamp under dust is strongly powered and lights the lamps next to it, so shell
     # voxels touching a plate lamp become lamps (only when every plate lamp they touch is their own region's)
     owner = {}
@@ -228,7 +238,7 @@ def build(root, regions, stem_index, fills3):
             # plate axes: plate cell (a, b) = (i, j) -> world (z, x); flow along +a is +z, along +b is +x
             a, b = blk[1]
             flow = (b, a)            # world (dx, dz)
-            out.append(f"setblock {p[0]} {p[1]} {p[2]} repeater[facing={FACE[flow]},delay=2]")
+            out.append(f"setblock {p[0]} {p[1]} {p[2]} repeater[facing={FACE[flow]},delay={RING_DELAY}]")
     base = {r: W(li, lj, 0)[0::2] for r, (li, lj) in ladders.items()}            # (x, z) of each ladder
     xs = [x for x, y, z in blocks]; zs = [z for x, y, z in blocks]; ys = [y for x, y, z in blocks]
     # ambient: invisible light blocks in the air shell 2 blocks outside the surface, every 5th cell
