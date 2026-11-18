@@ -257,3 +257,4 @@ Full record in `PHASE1_EVIDENCE.md`. Summary:
 - Timing: ladders up to 48 torches add about 5 s, so the readout moved to 28 s and decay to 38 s.
 - Performance: full-interior plates (42,708 dust) peaked at P99 76 ms when the largest region lit. Band plates (26,305 dust) and tighter rings: P99 41 ms (prefrontal) and 45 ms (temporal), mean 5 ms, within the 50 ms budget.
 - In-client screenshots (`img/upright/`): front, three-quarter and side, idle and activated. Activation is visible as bright stripes across the lobe.
+- 2026-11-18 (later): performance pass and upright regression, see `TEST_REPORT_UPRIGHT.md`. 21 of 21 checks; single-region P99 23 to 31 ms, ties up to 65 ms in the worst run, sustained runs at most 26 ms. Client screenshots deferred until GUI automation is approved.
