@@ -110,8 +110,8 @@ def composition(ring_outer, M, fills):
 
 UPRIGHT_CAMERAS = {  # name: (x, y, z, yaw, pitch)
     "1_reveal": (16, -58.4, 8, 0, -12), "2_input": (8, -57.4, -79, 0, 25), "3_processor": (16, -40, -70, 0, 62),
-    "4_decision": (16, -44, -28, 0, 58), "5_axons": (16, -50, 30, 0, -5), "6_three_quarter": (-50, -40, 22, -38, 4),
-    "7_wide": (16, -14, -92, 0, 16), "8_side": (-72, -32, 108, -90, 4), "9_front_close": (16, -50, 40, 0, -18)}
+    "4_decision": (16, -44, -28, 0, 58), "5_axons": (16, -50, 30, 0, -5), "6_three_quarter": (-70, -45, 0, -38, -14),
+    "7_wide": (16, -14, -92, 0, 16), "8_side": (-73, -40, 112, -90, -12), "9_front_close": (16, -50, 40, 0, -18)}
 
 
 def build_upright(U, region_labels, colors, fills3):

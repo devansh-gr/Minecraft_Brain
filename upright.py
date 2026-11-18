@@ -153,7 +153,7 @@ def build(root, regions, stem_index, fills3):
         if l1[i, j, k]:
             blocks[W(i, j, k)] = f"{col}_stained_glass"
         elif l2[i, j, k]:
-            blocks[W(i, j, k)] = f"{col}_concrete" if r != stem_index else "gray_concrete"
+            blocks[W(i, j, k)] = "black_concrete" if r != stem_index else "gray_concrete"   # dark backing: lit rows pop
 
     plates, lit3, probe = {}, {r: [] for r in range(N)}, {}
     top_k = {}
@@ -175,6 +175,24 @@ def build(root, regions, stem_index, fills3):
             for (a, b), fl in d["reps"].items():
                 blocks[W(a, b, k)] = ("repeater", fl)
             lit3[r] += [W(a, b, k - 1) for a, b in d["lit"]]
+    # surface stripes: a lamp under dust is strongly powered and lights the lamps next to it, so shell
+    # voxels touching a plate lamp become lamps (only when every plate lamp they touch is their own region's)
+    owner = {}
+    for (r, k), d in plates.items():
+        for a, b in d["mesh"]:
+            owner[(a, b, k - 1)] = r
+    touch = {}
+    for (a, b, k), r in owner.items():
+        for da, db, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, -1)]:
+            n = (a + da, b + db, k + dk)
+            if 0 <= n[0] < T.shape[0] and 0 <= n[1] < T.shape[1] and 0 <= n[2] < T.shape[2] and l1[n]:
+                touch.setdefault(n, set()).add(r)
+    near_ladder = {(li + a, lj + b) for li, lj in ladders.values() for a in (-1, 0, 1) for b in (-1, 0, 1)}
+    stripes = {n: rs.pop() for n, rs in touch.items()
+               if len(rs) == 1 and Lb[n] in rs and (n[0], n[1]) not in near_ladder}
+    for n, r in stripes.items():
+        blocks[W(*n)] = "redstone_lamp"
+        lit3[r].append(W(*n))
     # ladders: block, torch, block, ... from the tract level up to the region's top plate
     for r, (li, lj) in ladders.items():
         x, _, z = W(li, lj, 0)
@@ -204,7 +222,15 @@ def build(root, regions, stem_index, fills3):
             out.append(f"setblock {p[0]} {p[1]} {p[2]} repeater[facing={FACE[flow]},delay=2]")
     base = {r: W(li, lj, 0)[0::2] for r, (li, lj) in ladders.items()}            # (x, z) of each ladder
     xs = [x for x, y, z in blocks]; zs = [z for x, y, z in blocks]; ys = [y for x, y, z in blocks]
-    stats = dict(voxels=int(T.sum()), plates=len(plates), dust=sum(len(d["dust"]) for d in plates.values()),
+    # ambient: invisible light blocks in the air shell 2 blocks outside the surface, every 5th cell
+    halo = ndimage.binary_dilation(T, iterations=2) & ~ndimage.binary_dilation(T, iterations=1)
+    hi, hj, hk = np.nonzero(halo)
+    sel = ((hi + hj + hk) % 5 == 0)
+    ladder_cols = {W(li, lj, 0)[0::2] for li, lj in ladders.values()}
+    halo_pts = [W(a, b, c) for a, b, c in zip(hi[sel], hj[sel], hk[sel])
+                if W(a, b, c)[1] > -56 and W(a, b, c) not in blocks and W(a, b, c)[0::2] not in ladder_cols]
+    out += fills3(halo_pts, "light[level=11]")
+    stats = dict(voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
                 footprint={(x, z) for x, y, z in blocks if y <= BASE_Y + 2})
