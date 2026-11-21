@@ -8,6 +8,7 @@ Lighting: each region gets one vertical torch ladder rising from its axon. Ladde
 powered exactly while the axon is; at those levels a horizontal plate of dust on lamps fills the region's
 cross-section just behind the glass shell, with repeater rings for reach. Decorative voxels are unpowered.
 """
+import heapq
 import math
 from collections import deque
 import numpy as np
@@ -24,6 +25,11 @@ MAX_EXPOSED = 6             # preferred max height of ladder visible below the b
 RING = 8                    # dust cells between repeater rings on a plate
 LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
 RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
+RISER_EXPOSED = 8            # a hidden feed's riser may show this much below the brain
+MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
+
+SEAL = True                 # fill the interior with tinted glass (light-engine cost)
+BAND_COST = 1000
 BAND = 3                    # plate cells kept within this distance of the plate edge
 NB4 = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
@@ -161,7 +167,87 @@ def build(root, regions, stem_index, fills3):
                 taken_x.append(x)
                 break
     assert len(ladders) == N, "no ladder site for some region"
-    lad_cells = {r: {(li + a, lj + b) for a in (-1, 0, 1) for b in (-1, 0, 1)} for r, (li, lj) in ladders.items()}
+    sq = lambda li, lj: {(li + a, lj + b) for a in (-1, 0, 1) for b in (-1, 0, 1)}
+    lad_cells = {r: sq(*ladders[r]) for r in ladders}
+
+    # hidden feeds: a region whose ladder would stand exposed below the brain instead rises in a short
+    # column and crosses to its ladder inside the brain on a dust line (on glass) at plate level kt
+    interior = T & ~l1 & ~l2
+    risers, lines, kmin = {}, {}, {}
+    band_all = {}
+    for k in plate_k:
+        band_all[k] = np.zeros(T.shape[:2], bool)
+        for o in range(N):
+            m = pmask(o, k)
+            band_all[k] |= m & (ndimage.distance_transform_cdt(np.pad(m, 1), metric="taxicab")[1:-1, 1:-1] <= BAND)
+    band_cnt = {k: np.cumsum([band_all[q] for q in plate_k if q <= k], axis=0)[-1] for k in plate_k}   # per column, levels <= k
+    hits = lambda p, kt: int(band_cnt[kt][max(p[0] - 1, 0):p[0] + 2, max(p[1] - 1, 0):p[1] + 2].sum())
+    for r, (li, lj) in ladders.items():
+        if low[li, lj] - k0 <= MAX_EXPOSED:
+            continue
+        for kt in [k for k in plate_k if k >= low[li, lj] + 2]:
+            reserved = set().union(*lad_cells.values(), *[sq(*q) for q in risers.values()],
+                                   *[{(a + da, b + db) for a, b in L for da, db in NB4 + [(0, 0)]} for L, k in lines.values() if k == kt])
+            free = ndimage.binary_erosion(interior[:, :, kt] & interior[:, :, kt - 1])
+            ok = lambda q: 0 <= q[0] < free.shape[0] and 0 <= q[1] < free.shape[1] and free[q] and \
+                (q not in reserved or q in lad_cells[r])
+            # cheapest path: crossing a plate band cuts that plate, so band cells cost far more than gaps
+            band_k = band_all[kt]
+            # states are (cell, heading): turns cost extra so the line has straight runs for its repeaters
+            dist_s, prev_s, hq = {}, {}, []
+            for a, b in NB4:
+                q = (li + a, lj + b)
+                if ok(q):
+                    st = (q, (-a, -b))
+                    dist_s[st], prev_s[st] = 0, None
+                    heapq.heappush(hq, (0, st))
+            while hq:
+                d, st = heapq.heappop(hq)
+                if d > dist_s[st]:
+                    continue
+                q, h = st
+                for a, b in NB4:
+                    n = (q[0] + a, q[1] + b)
+                    if ok(n) and n != (li, lj) and (a, b) != h:
+                        turn = 0 if (-a, -b) == h else (10 ** 6 if prev_s[st] is None else 3)   # ends stay straight
+                        nd = d + (BAND_COST if band_k[n] else 1) + turn
+                        ns = (n, (-a, -b))
+                        if nd < dist_s.get(ns, 1e9):
+                            dist_s[ns], prev_s[ns] = nd, st
+                            heapq.heappush(hq, (nd, ns))
+            dist, prev = {}, {}
+            for (q, h), d in dist_s.items():
+                # the riser must sit straight behind the line's first cell (that cell holds a repeater)
+                straight_in = prev_s[(q, h)] is not None and prev_s[(q, h)][1] == h
+                if straight_in and d < dist.get(q, 1e9):
+                    dist[q], prev[q] = d, (q, h)
+            best = None
+            for p, d in dist.items():
+                if d < 2 or low[p] - k0 > RISER_EXPOSED or sq(*p) & (reserved - lad_cells[r]):
+                    continue
+                x = W(p[0], p[1], 0)[0]
+                c = d + BAND_COST * hits(p, kt)          # a riser through another plate band cuts it too
+                if all(abs(x - t) >= 3 for t in taken_x if t != W(li, lj, 0)[0]) and (best is None or c < best[0]):
+                    best = (c, p)
+            if best:
+                p = best[1]
+                path, st = [], prev_s[prev[p]]
+                while st:
+                    path.append(st[0])
+                    st = prev_s[st]
+                tot = sum(int(pmask(r, k).sum()) for k in plate_k)
+                lost = sum(int(pmask(r, k).sum()) for k in plate_k if k < kt)
+                if lost > MAX_LOSS * tot:          # too much of the region sits below the crossing: keep the stilt
+                    break
+                risers[r], lines[r], kmin[r] = p, (path, kt), kt      # path runs riser -> ladder
+                taken_x.remove(W(li, lj, 0)[0])                        # the axon now arrives at the riser
+                taken_x.append(W(p[0], p[1], 0)[0])
+                break
+    line_cells = {}
+    for r, (L, kt) in lines.items():
+        for a, b in L:
+            for da, db in NB4 + [(0, 0)]:
+                line_cells.setdefault(kt, set()).add((a + da, b + db))
 
     blocks = {}            # (x, y, z) -> block
     for i, j, k in zip(ii, jj, kk):
@@ -175,8 +261,11 @@ def build(root, regions, stem_index, fills3):
     plates, lit3, probe = {}, {r: [] for r in range(N)}, {}
     top_k = {}
     for r, (li, lj) in ladders.items():
-        foreign = set().union(*[lad_cells[o] for o in ladders if o != r])
+        foreign0 = set().union(*[lad_cells[o] for o in ladders if o != r])
         for k in plate_k:
+            if k < kmin.get(r, 0):
+                continue
+            foreign = foreign0.union(*[sq(*q) for o, q in risers.items() if k <= kmin[o]])
             m = pmask(r, k)
             # keep only a band behind the surface (interior lamps are invisible but cost light updates),
             # joined to the ladder by four straight spokes
@@ -186,7 +275,7 @@ def build(root, regions, stem_index, fills3):
                 while 0 <= a_ < m.shape[0] and 0 <= b_ < m.shape[1] and m[a_, b_]:
                     band[a_, b_] = True
                     a_, b_ = a_ + da, b_ + db
-            cells = {(int(a), int(b)) for a, b in zip(*np.nonzero(band))} - foreign
+            cells = {(int(a), int(b)) for a, b in zip(*np.nonzero(band))} - foreign - line_cells.get(k, set())
             if (li, lj) not in cells or not all((li + a, lj + b) in cells for a, b in NB4):
                 continue
             d = design_plate(cells, (li, lj))
@@ -213,7 +302,7 @@ def build(root, regions, stem_index, fills3):
             n = (a + da, b + db, k + dk)
             if 0 <= n[0] < T.shape[0] and 0 <= n[1] < T.shape[1] and 0 <= n[2] < T.shape[2] and l1[n]:
                 touch.setdefault(n, set()).add(r)
-    near_ladder = {(li + a, lj + b) for li, lj in ladders.values() for a in (-1, 0, 1) for b in (-1, 0, 1)}
+    near_ladder = set().union(*lad_cells.values(), *[sq(*q) for q in risers.values()])
     stripes = {n: rs.pop() for n, rs in touch.items()
                if len(rs) == 1 and Lb[n] in rs and (n[0], n[1]) not in near_ladder}
     for n, r in stripes.items():
@@ -223,7 +312,28 @@ def build(root, regions, stem_index, fills3):
     for r, (li, lj) in ladders.items():
         x, _, z = W(li, lj, 0)
         ytop = W(li, lj, top_k[r])[1]
-        for y in range(L1, ytop + 1):
+        ybot = L1
+        if r in risers:
+            L, kt = lines[r]
+            ybot = W(0, 0, kt)[1]
+            rx, _, rz = W(*risers[r], 0)
+            for y in range(L1, ybot + 1):
+                blocks[(rx, y, rz)] = "redstone_torch" if (y - L1) % 2 else "smooth_stone"
+            # dust on glass; repeaters at both ends (out of the riser, into the ladder) and every 14 dust
+            seq = [risers[r]] + L + [(li, lj)]
+            run = 0
+            for n in range(1, len(seq) - 1):
+                (pa, pb), (a, b), (na, nb) = seq[n - 1], seq[n], seq[n + 1]
+                straight = (a - pa, b - pb) == (na - a, nb - b)
+                blocks[W(a, b, kt - 1)] = "glass"
+                if n in (1, len(seq) - 2) or (run >= 9 and straight):
+                    blocks[W(a, b, kt)] = ("repeater", (a - pa, b - pb), 1)
+                    run = 0
+                else:
+                    blocks[W(a, b, kt)] = "redstone_wire"
+                    run += 1
+                    assert run <= 14, "hidden feed line too long without a straight cell for a repeater"
+        for y in range(ybot, ytop + 1):
             blocks[(x, y, z)] = "redstone_torch" if (y - L1) % 2 else "smooth_stone"
         for a, b in NB4:
             if (li + a, lj + b) in plates[(r, top_k[r])]["dust"]:
@@ -231,13 +341,19 @@ def build(root, regions, stem_index, fills3):
                 break
     # cradle: a dark stand under the brain, inset from the silhouette, that also encases every ladder below it
     stand = np.zeros(proj.shape, bool)
-    for li, lj in ladders.values():
+    for r, (li, lj) in ladders.items():
+        li, lj = risers.get(r, (li, lj))
         stand[max(li - 1, 0):li + 2, max(lj - 1, 0):lj + 2] = True
     for i, j in zip(*np.nonzero(stand)):
         for k in range(k0, min(low[i, j], T.shape[2])):
             p = W(i, j, k)
             if p not in blocks:
                 blocks[p] = "polished_blackstone"
+    # light seal: every unused cell inside the brain becomes tinted glass (blocks light, conducts nothing),
+    # so a switching lamp relights only its own few cells instead of the hollow interior
+    if SEAL:
+        for i, j, k in zip(ii, jj, kk):
+            blocks.setdefault(W(i, j, k), "tinted_glass")
     # emit: everything is set from the bottom up so torches always have support
     FACE = {(0, 1): "north", (0, -1): "south", (1, 0): "west", (-1, 0): "east"}
     out = []
@@ -254,19 +370,20 @@ def build(root, regions, stem_index, fills3):
             # plate axes: plate cell (a, b) = (i, j) -> world (z, x); flow along +a is +z, along +b is +x
             a, b = blk[1]
             flow = (b, a)            # world (dx, dz)
-            out.append(f"setblock {p[0]} {p[1]} {p[2]} repeater[facing={FACE[flow]},delay={RING_DELAY}]")
-    base = {r: W(li, lj, 0)[0::2] for r, (li, lj) in ladders.items()}            # (x, z) of each ladder
+            out.append(f"setblock {p[0]} {p[1]} {p[2]} repeater[facing={FACE[flow]},delay={blk[2] if len(blk) > 2 else RING_DELAY}]")
+    base = {r: W(*risers.get(r, q), 0)[0::2] for r, q in ladders.items()}            # (x, z) where each axon arrives
     xs = [x for x, y, z in blocks]; zs = [z for x, y, z in blocks]; ys = [y for x, y, z in blocks]
     # ambient: invisible light blocks in the air shell 2 blocks outside the surface, every 5th cell
     halo = ndimage.binary_dilation(T, iterations=2) & ~ndimage.binary_dilation(T, iterations=1)
     hi, hj, hk = np.nonzero(halo)
     sel = ((hi + hj + hk) % 5 == 0)
-    ladder_cols = {W(li, lj, 0)[0::2] for li, lj in ladders.values()}
+    ladder_cols = {W(li, lj, 0)[0::2] for li, lj in list(ladders.values()) + list(risers.values())}
     halo_pts = [W(a, b, c) for a, b, c in zip(hi[sel], hj[sel], hk[sel])
                 if W(a, b, c)[1] > -56 and W(a, b, c) not in blocks and W(a, b, c)[0::2] not in ladder_cols]
     out += fills3(halo_pts, "light[level=8]")
-    exposed = {regions[r][0]: int(low[li, lj] - k0) for r, (li, lj) in ladders.items()}
-    stats = dict(exposed=exposed, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
+    exposed = {regions[r][0]: int(low[risers.get(r, q)] - k0) for r, q in ladders.items()}
+    stats_lines = {regions[r][0]: (len(L), int(BASE_Y + kt - k0), W(*risers[r], kt), [W(*q, kt) for q in L], W(*ladders[r], kt)) for r, (L, kt) in lines.items()}
+    stats = dict(exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
                 footprint={(x, z) for x, y, z in blocks if y <= BASE_Y + 2})
