@@ -120,7 +120,7 @@ def design_plate(cells, feed):
                 power[front] = 15
                 changed = True
     lit = {q for q in dust if power.get(q, 0) > 0}
-    glow = lit | {(q[0] + a, q[1] + b) for q in lit for a, b in NB4 if (q[0] + a, q[1] + b) in cells}
+    glow = (lit | {(q[0] + a, q[1] + b) for q in lit for a, b in NB4 if (q[0] + a, q[1] + b) in cells}) - {feed}   # the feed cell is the ladder
     return dict(lamps=cells - {feed}, mesh=mesh, dust=dust, reps=reps, lit=lit, glow=glow)
 
 
