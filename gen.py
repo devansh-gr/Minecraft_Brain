@@ -536,7 +536,7 @@ def main():
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
     # only the two command limits the build itself needs; nothing else world-wide is changed
-    w("build", ["gamerule max_command_sequence_length 10000000",
+    w("build_run", ["scoreboard players set #build_ok brain.st 0", "gamerule max_command_sequence_length 10000000",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
                 *([f"fill {U['stats']['bbox'][0]-2} {y} {U['stats']['bbox'][4]-2} {U['stats']['bbox'][1]+2} {min(y + 7, U['stats']['bbox'][3] + 2)} {U['stats']['bbox'][5]+2} air"
@@ -547,7 +547,9 @@ def main():
                 "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
                 "function brain:build_cortex", "function brain:build_console", "function brain:load",
                 "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show",
-                "function brain:build_cleanup"])
+                # opt-in only (dedicated build/test worlds): removes fresh items in the box, which cannot be told
+                # apart from a player's freshly dropped item
+                "execute if score #drop_cleanup brain.st matches 1 run function brain:build_cleanup"])
     w("build_board", B); w("build_tracts", T); w("build_cortex", C)
 
     # cleanup: torches and dust knocked off during this build drop as items in the same tick (Age 0).
@@ -560,6 +562,13 @@ def main():
                 lo[i % 3], hi[i % 3] = min(lo[i % 3], v), max(hi[i % 3], v)
     w("build_cleanup", [f"kill @e[type=item,x={lo[0]},y={lo[1]},z={lo[2]},dx={hi[0] - lo[0] + 1},dy={hi[1] - lo[1] + 1},"
                         f"dz={hi[2] - lo[2] + 1},nbt={{Age:0s}}]"])
+
+    # guarded entry point: brain:build only warns unless #build_ok is set (the build clears a large volume)
+    box = f"the laboratory volume (x {lo[0]}..{hi[0]}, y {lo[1]}..{hi[1]}, z {lo[2]}..{hi[2]})"
+    w("build", ["execute unless score #build_ok brain.st matches 1 run tellraw @a "
+                + json.dumps({"text": f"Redstone Cortex: brain:build will CLEAR {box} and rebuild it. Back up the world first. "
+                              "To proceed: /scoreboard players set #build_ok brain.st 1, then /function brain:build again.", "color": "red"}),
+                "execute if score #build_ok brain.st matches 1 run function brain:build_run"])
 
     # test hook: list of lamp cells that must light per region
     if U:
