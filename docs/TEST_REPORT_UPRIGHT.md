@@ -1,6 +1,6 @@
 # Test Report: Upright Mode (prototype world `BrainUpright`)
 
-Executed 2026-11-18 on a dedicated Minecraft 26.3 server over RCON, after commit `72bd202` and the later performance and visual changes (latest `59cd7bc`). Generator settings: `MODE = "upright"`, BAND 3, LINE 2, RING 8, ring repeater delay 3, staggered axons, random ticks off. The installed world and the relief fallback (`MODE = "relief"`) are unchanged.
+Executed 2026-11-18, rerun in full 2026-11-21 after commit `27eb9ce` (hidden feeds, light seal, axon stagger), on a dedicated Minecraft 26.3 server over RCON, after commit `72bd202` and the later performance and visual changes (latest `59cd7bc`). Generator settings: `MODE = "upright"`, BAND 3, LINE 2, RING 8, ring repeater delay 3, axon stagger 5 redstone ticks per board column, tinted-glass interior seal, hidden feeds (RISER_EXPOSED 8, MAX_LOSS 0.15), random ticks off. The installed world and the relief fallback (`MODE = "relief"`) are unchanged.
 
 **21 of 21 checks passed** (complete suite including restart, learning, lesions, ties, reset and idle recovery). Test 5 has two parts.
 
@@ -30,18 +30,26 @@ Executed 2026-11-18 on a dedicated Minecraft 26.3 server over RCON, after commit
 
 ## Performance (`perf.py`: worst 5-second `/tick query` window across a whole activation)
 
-| Scenario | P99 range over repeated runs (ms) | Worst mean (ms) |
-|---|---|---|
-| Idle | 0.7 to 0.9 | 0.6 |
-| Largest single region (prefrontal) | 23 to 31 | 4 |
-| 2-way tie | 28 to 43 | 5 |
-| 8-way tie (all regions at once) | 18 to 65 | 11 |
-| 6 consecutive runs (sustained) | 4 to 26 | 2 |
+| Scenario | P99, 2026-11-18 (ms) | P99, 2026-11-21, 2 runs (ms) | Worst mean, 2026-11-21 (ms) |
+|---|---|---|---|
+| Idle | 0.7 to 0.9 | 0.7 | 0.6 |
+| Largest single region (prefrontal) | 23 to 31 | 12.5, 20.9 | 0.8 |
+| 2-way tie | 28 to 43 | 27.1, 27.1 | 5.5 |
+| 8-way tie (all regions at once) | 18 to 65 | 23.7, 27.5 | 2.9 |
+| 6 consecutive runs (sustained) | 4 to 26 | 21.2 to 27.7 | 2.4 |
 
-Target was P99 at or below 30 ms. Single-region activations and sustained use meet it; ties exceed it in some runs. The worst single tick varies from run to run because it depends on which plate rings switch on the same tick. Tradeoff: further reduction needs either fewer lit lamps (a less visible activation) or Minecraft's experimental faster redstone update (a world-creation feature flag, not used to keep the world plain vanilla). Every scenario stayed under 50 ms (one tick).
+Target P99 at or below 30 ms: met in all 11 measured windows. Three changes, measured separately:
+1. Tinted-glass light seal: every unused cell inside the brain is tinted glass (blocks light, conducts no redstone), so a switching lamp relights only its own few cells instead of the hollow interior. Commit `615a636`: 2-way tie 22 ms, 8-way tie 43 ms.
+2. Axon stagger: each board column adds 5 redstone ticks (0.25 s) of repeater delay, so tied regions climb their ladders in turn instead of together. The stagger used before (0 to 4 ticks) could not separate ladders, because plates repeat every 2 redstone ticks and redstone ticks are the finest timing step. A tie now lights as a west-to-east cascade over 1.75 s. Readout moved from 28 s to 32 s, decay from 38 s to 42 s.
+3. Dropped items: each rebuild popped torches and dust as item entities (8,847 found, about 30 ms per tick while idle). The build now kills dropped items. Earlier benchmark runs were partly affected by this.
+
+Rejected: dust on every third row instead of every second (dust down 15 percent but lit lamps down 25 percent), and plates cut down to cells that touch the shell (lamps behind the surface down 44 percent, because the thinned plates broke away from their ladders).
 
 ### What the time is spent on
 `/perf` profile of a prefrontal activation: scheduled block ticks (dust propagation through ~1.4 million neighbour lookups in 10 s) dominate the spikes; lamp light updates are about 3 percent. The changes that brought the largest region from P99 76 ms to about 25 ms: plates cut to a 3-cell band behind the surface (interior lamps are invisible), dust only on the plate rim, the spokes and every second row (a lamp under powered dust lights its neighbours), repeater delay 3 against the ladder's 4-tick plate spacing, staggered axon delays per region, and random ticks off.
+
+## Hidden feeds (stilts)
+Regions whose ladder would stand more than 6 blocks below the brain (prefrontal 29, Broca 29, somatosensory 20, motor 19) are fed by a short riser column under the posterior brain instead. At one plate level the riser's powered block drives a dust line on glass that runs inside the brain to the region's ladder, which continues upward from there. Route search: Dijkstra over interior cells at least one cell from the dark backing layer. It costs 1000 per cell inside another region's plate band, 3 per turn, and requires straight ends so the first and last cells can hold repeaters. Repeaters come at least every 10 dust. The riser site is chosen by the same costs plus lane spacing (3 blocks) for the tract under the board. Plates below the crossing level are not built: they cost prefrontal 17 percent and Broca 22 percent of their lit lamps (the orbitofrontal underside). In-game check: the four rerouted regions light fully when injected alone (lit fraction 1.0), and the regression passes.
 
 ## Failures found and fixed in upright mode
 1. Neighbouring regions' plates touched in the same slice and merged dust networks, some latching on. Plates now keep a gap from every other region.
@@ -52,7 +60,10 @@ Target was P99 at or below 30 ms. Single-region activations and sustained use me
 6. Stripes adjacent only to ring-gap lamps never lit. Stripes are created only next to dust-powered lamps.
 7. A partial manual rebuild ran the board builder after the console, and the board clear erased the input-neuron bars. The board clear now starts at z = -24.
 
+8. First hidden-feed version: one line went 16 dust without a repeater around a bend and died; one line's first repeater sat on a turn and powered nothing. The search now penalises turns and requires straight ends, and repeaters are forced every 10 dust (with an assertion).
+9. Dropped item entities from rebuilds raised idle tick time to about 30 ms. The build now kills them.
+
 ## Not yet verified
 - 1080p client screenshots and client FPS: postponed. GUI automation is only done with explicit approval when the machine is not in use.
-- Ladder segments below the brain: columns are chosen for short exposure (4 to 6 blocks for parietal, occipital and cerebellum) but the frontal regions still need 20 to 29 blocks; these are encased as dark 3x3 columns, not hidden.
+- Ladder segments below the brain: now 4 to 8 blocks for seven regions (encased 3x3 columns under the posterior brain). Temporal still stands 14 blocks: hiding it would remove 21 percent of its plate area. See "Hidden feeds".
 - Only the left hemisphere (facing the entrance) is wired for lighting; the right hemisphere is decorative.
