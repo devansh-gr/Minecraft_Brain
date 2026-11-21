@@ -11,7 +11,7 @@ CH = sorted(EXP, key=lambda r: EXP[r]["x"])                    # physical channe
 random.seed(1)
 SAMPLE = {r: random.sample(v["lit"], min(40, len(v["lit"]))) for r, v in EXP.items()}
 CZ = -74
-RUN_WAIT = 30
+RUN_WAIT = 34
 
 
 def score(name, obj="brain.n"):

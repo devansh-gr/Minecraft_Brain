@@ -107,6 +107,7 @@ def lateral_map():
 
 
 # ---------------------------------------------------------------- 3D relief from the volumetric surface
+STAGGER = 5          # upright: extra axon delay per board column (redstone ticks)
 MODE = "upright"      # "upright": volumetric brain (upright.py); "relief": v3.2 relief map
 RELIEF = True          # (relief mode) False -> flat map (v3 fallback)
 RELIEF_SCALE = 0.45    # fraction of the true lateral bulge kept (slope must stay <= 1 block per block)
@@ -442,10 +443,11 @@ def main():
         front = min(z for x, z in U["footprint"]) if U else MAP_Z0
         lampsup = lambda x, z: "redstone_lamp" if z < front else "smooth_stone"
         route(path, L0, L1, lampsup, T, delay=2)
-        if U:   # stagger axons so tied regions never switch their plates on the same ticks
-            stag = [0, 1, 2, 3, 4, 2, 3, 1][k]
-            T += [f"setblock {x0} {L1} 10 repeater[facing=north,delay={2 + min(2, stag)}]",
-                  f"setblock {x0} {L1} 17 repeater[facing=north,delay={2 + max(0, stag - 2)}]"]
+        if U:   # stagger axons by STAGGER redstone ticks per column: tied regions climb their ladders in turn
+            D = 4 + STAGGER * k
+            n = -(-D // 4)
+            for j, z in enumerate([10, 17, 8, 14, 19, 9, 15, 20, 11, 16, 21, 18][:n]):
+                T.append(f"setblock {x0} {L1} {z} repeater[facing=north,delay={D // n + (j < D % n)}]")
         T += [f"setblock {x0} {L1} 12 comparator[facing=north,mode=subtract]",
               f"setblock {x0+1} {L0} 12 glass", f"setblock {x0+1} {L1} 12 redstone_wire",
               f"setblock {x0+2} {L0} 12 redstone_lamp", f"setblock {x0+2} {L1} 12 lever[face=floor,facing=north]"]
@@ -543,7 +545,8 @@ def main():
                   [f"fill {lo_x} {LAMP} {MAP_Z0-1} {hi_x} {LAMP + HMAX + 4} {MAP_Z0+H+1} air"]),
                 "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
                 "function brain:build_cortex", "function brain:build_console", "function brain:load",
-                "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show"])
+                "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show",
+                "kill @e[type=item]"])                 # blocks popped off during the clear drop as items
     w("build_board", B); w("build_tracts", T); w("build_cortex", C)
 
     # test hook: list of lamp cells that must light per region
