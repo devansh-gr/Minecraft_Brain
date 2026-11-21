@@ -4,7 +4,7 @@ Only the sign reader is commands. Everything after the barrels is redstone:
 comparator winner-take-all, lamp axons, and dust meshes on a flat lamp cortex
 that light ring by ring through repeaters.
 """
-import json, math, shutil
+import json, re, math, shutil
 from collections import deque
 from pathlib import Path
 import numpy as np
@@ -535,7 +535,8 @@ def main():
     lab.cameras(w)
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
-    w("build", ["gamerule max_command_sequence_length 10000000", "gamerule random_tick_speed 0", "gamerule command_block_output false", "gamerule advance_weather false", "weather clear",
+    # only the two command limits the build itself needs; nothing else world-wide is changed
+    w("build", ["gamerule max_command_sequence_length 10000000",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
                 *([f"fill {U['stats']['bbox'][0]-2} {y} {U['stats']['bbox'][4]-2} {U['stats']['bbox'][1]+2} {min(y + 7, U['stats']['bbox'][3] + 2)} {U['stats']['bbox'][5]+2} air"
@@ -546,8 +547,19 @@ def main():
                 "function brain:build_lab", "function brain:build_board", "function brain:build_tracts",
                 "function brain:build_cortex", "function brain:build_console", "function brain:load",
                 "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show",
-                "kill @e[type=item]"])                 # blocks popped off during the clear drop as items
+                "function brain:build_cleanup"])
     w("build_board", B); w("build_tracts", T); w("build_cortex", C)
+
+    # cleanup: torches and dust knocked off during this build drop as items in the same tick (Age 0).
+    # Only those are removed: Age 0 and inside the box spanned by the build's own fill/setblock commands.
+    lo, hi = [10 ** 9] * 3, [-10 ** 9] * 3
+    for f in (DP / "data/brain/function").glob("build_*.mcfunction"):
+        for l in f.read_text().splitlines():
+            m = re.match(r"(?:fill|setblock) (-?\d+) (-?\d+) (-?\d+)(?: (-?\d+) (-?\d+) (-?\d+))?", l)
+            for i, v in enumerate(int(x) for x in (m.groups() if m else ()) if x is not None):
+                lo[i % 3], hi[i % 3] = min(lo[i % 3], v), max(hi[i % 3], v)
+    w("build_cleanup", [f"kill @e[type=item,x={lo[0]},y={lo[1]},z={lo[2]},dx={hi[0] - lo[0] + 1},dy={hi[1] - lo[1] + 1},"
+                        f"dz={hi[2] - lo[2] + 1},nbt={{Age:0s}}]"])
 
     # test hook: list of lamp cells that must light per region
     if U:
