@@ -23,11 +23,12 @@ FRONT_Z = 64                # world z of the leftmost (north-facing) voxel
 L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
 MAX_EXPOSED = 6             # preferred max height of ladder visible below the brain (blocks)
 RING = 8                    # dust cells between repeater rings on a plate
-LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
+LINE = 1                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
 RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
 RISER_EXPOSED = 8            # a hidden feed's riser may show this much below the brain
 MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
 
+MID = True                  # a second lamp layer 2 below each plate, fed by a one-step dust stair (visual density)
 SEAL = True                 # fill the interior with tinted glass (light-engine cost)
 BAND_COST = 1000
 BAND = 3                    # plate cells kept within this distance of the plate edge
@@ -136,6 +137,10 @@ def build(root, regions, stem_index, fills3):
     plate_k = [k for k in range(k0 + 1, T.shape[2]) if (BASE_Y + k - k0 - L1) % 4 == 0]
 
     # plate masks per region and level: inside the region, left hemisphere, behind the glass shell
+    def near_other(r, k, it=1):
+        other = (Lb[:, :, k] >= 0) & (Lb[:, :, k] != r)
+        return ndimage.binary_dilation(other, structure=ndimage.generate_binary_structure(2, 1), iterations=it)
+
     def pmask(r, k):
         a = (Lb[:, :, k] == r) & left[:, :, k] & ~l1[:, :, k]
         b = (Lb[:, :, k - 1] == r) & ~l1[:, :, k - 1]
@@ -258,7 +263,7 @@ def build(root, regions, stem_index, fills3):
         elif l2[i, j, k]:
             blocks[W(i, j, k)] = "black_concrete" if r != stem_index else "gray_concrete"   # dark backing: lit rows pop
 
-    plates, lit3, probe = {}, {r: [] for r in range(N)}, {}
+    plates, mids, lit3, probe, stairs = {}, {}, {r: [] for r in range(N)}, {}, []
     top_k = {}
     for r, (li, lj) in ladders.items():
         foreign0 = set().union(*[lad_cells[o] for o in ladders if o != r])
@@ -278,6 +283,34 @@ def build(root, regions, stem_index, fills3):
             cells = {(int(a), int(b)) for a, b in zip(*np.nonzero(band))} - foreign - line_cells.get(k, set())
             if (li, lj) not in cells or not all((li + a, lj + b) in cells for a, b in NB4):
                 continue
+            # mid layer: dust at k-2 on lamps at k-3. Its feed is a stone at (p1, k-2) under a dust step at k-1
+            # that drops from the plate dust at p0 next to the ladder; the stone, strongly powered, feeds k-2.
+            mid, step = None, None
+            if MID and k - 3 >= 0:
+                m2 = ((Lb[:, :, k - 2] == r) & (Lb[:, :, k - 3] == r) & left[:, :, k - 2] & ~l1[:, :, k - 2] & ~l1[:, :, k - 3]
+                      & ~near_other(r, k - 2, 2) & ~near_other(r, k - 3))   # 2: dust pointing into a block lights its neighbours
+                band2 = m2 & (ndimage.distance_transform_cdt(np.pad(m2, 1), metric="taxicab")[1:-1, 1:-1] <= BAND)
+                bad = foreign | set().union(*[sq(*q) for q in risers.values()]) | sq(li, lj)   # ladder phases differ at k-2, k-3
+                ok = lambda q: 0 <= q[0] < m2.shape[0] and 0 <= q[1] < m2.shape[1] and m2[q] and q not in bad
+                for da, db in NB4:
+                    p0, p1 = (li + da, lj + db), (li + 2 * da, lj + 2 * db)
+                    p2, p3 = (li + 3 * da, lj + 3 * db), (li + 4 * da, lj + 4 * db)
+                    if p1 in cells and ok(p1) and ok(p2) and ok(p3):
+                        # stone p1 -> repeater p2 -> stone p3 (strongly powered at 15, feeds the layer like a ladder)
+                        # no layer dust may touch stone p1: dust -> p1 -> repeater -> p3 -> dust would latch
+                        guard = {p1, p2} | {(p1[0] + a, p1[1] + b) for a, b in NB4}
+                        c2 = {(int(a), int(b)) for a, b in zip(*np.nonzero(band2))} - bad - guard
+                        for ea, eb in NB4:          # spokes from the feed stone so the layer reaches its band
+                            a_, b_ = p3
+                            while ok((a_, b_)) and (a_, b_) not in guard:
+                                c2.add((a_, b_))
+                                a_, b_ = a_ + ea, b_ + eb
+                        c2.add(p3)
+                        d2 = design_plate(c2, p3)
+                        if len(d2["lit"]) >= 4:
+                            mid, step = d2, (p0, p1, p2, p3, (da, db))
+                            cells = cells - {p1}
+                            break
             d = design_plate(cells, (li, lj))
             if len(d["lit"]) < 4:
                 continue
@@ -290,15 +323,34 @@ def build(root, regions, stem_index, fills3):
             for (a, b), fl in d["reps"].items():
                 blocks[W(a, b, k)] = ("repeater", fl)
             lit3[r] += [W(a, b, k - 1) for a, b in d["glow"]]
+            if mid and step[0] in d["lit"]:
+                p0, p1, p2, p3, fl = step
+                blocks[W(*p1, k)] = "air"
+                blocks[W(*p1, k - 1)] = "redstone_wire"
+                blocks[W(*p1, k - 2)] = "smooth_stone"
+                blocks[W(*p2, k - 2)] = ("repeater", fl, 1)
+                blocks[W(*p3, k - 2)] = "smooth_stone"
+                for a, b in mid["lamps"]:
+                    blocks[W(a, b, k - 3)] = "redstone_lamp"
+                for a, b in mid["mesh"]:
+                    blocks[W(a, b, k - 2)] = "redstone_wire" if (a, b) in mid["dust"] else blocks.get(W(a, b, k - 2), "air")
+                for (a, b), fl in mid["reps"].items():
+                    blocks[W(a, b, k - 2)] = ("repeater", fl)
+                mids[(r, k)] = mid
+                stairs.append((regions[r][0], W(*p0, k), W(*p1, k - 1)))
+                lit3[r] += [W(a, b, k - 3) for a, b in mid["glow"]]
     # surface stripes: a lamp under dust is strongly powered and lights the lamps next to it, so shell
     # voxels touching a plate lamp become lamps (only when every plate lamp they touch is their own region's)
     owner = {}
     for (r, k), d in plates.items():
         for a, b in d["lit"]:                 # only lamps that actually carry powered dust
             owner[(a, b, k - 1)] = r
+    for (r, k), d in mids.items():
+        for a, b in d["lit"]:
+            owner[(a, b, k - 3)] = r
     touch = {}
     for (a, b, k), r in owner.items():
-        for da, db, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, -1)]:
+        for da, db, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, -1), (0, 0, 1)]:
             n = (a + da, b + db, k + dk)
             if 0 <= n[0] < T.shape[0] and 0 <= n[1] < T.shape[1] and 0 <= n[2] < T.shape[2] and l1[n]:
                 touch.setdefault(n, set()).add(r)
@@ -383,7 +435,16 @@ def build(root, regions, stem_index, fills3):
     out += fills3(halo_pts, "light[level=8]")
     exposed = {regions[r][0]: int(low[risers.get(r, q)] - k0) for r, q in ladders.items()}
     stats_lines = {regions[r][0]: (len(L), int(BASE_Y + kt - k0), W(*risers[r], kt), [W(*q, kt) for q in L], W(*ladders[r], kt)) for r, (L, kt) in lines.items()}
-    stats = dict(exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
+    # visible activation: share of each region's left-hemisphere shell voxels that are a lit lamp or glass
+    # directly in front of one
+    litw = {r: set(v) for r, v in lit3.items()}
+    cover = {}
+    for r in range(N):
+        sh = [W(i, j, k) for i, j, k in zip(*np.nonzero(l1 & left & (Lb == r)))]
+        g = sum(1 for p in sh if any((p[0] + a, p[1] + b, p[2] + c) in litw[r]
+                                     for a, b, c in [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]))
+        cover[regions[r][0]] = round(g / max(len(sh), 1), 3)
+    stats = dict(stairs=stairs, cover=cover, exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
                 footprint={(x, z) for x, y, z in blocks if y <= BASE_Y + 2})
