@@ -23,13 +23,14 @@ FRONT_Z = 64                # world z of the leftmost (north-facing) voxel
 L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
 MAX_EXPOSED = 6             # preferred max height of ladder visible below the brain (blocks)
 RING = 8                    # dust cells between repeater rings on a plate
-LINE = 1                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
+LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
 RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
 RISER_EXPOSED = 8            # a hidden feed's riser may show this much below the brain
 MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
 
 MID = True                  # a second lamp layer 2 below each plate, fed by a one-step dust stair (visual density)
-MID_EFF = 0.1               # keep a mid layer only if (lamps it lights right behind the shell) / (its dust) >= this
+MID_EFF = 0.0               # keep a mid layer only if (lamps it lights right behind the shell) / (its dust) >= this
+MID_DELAY = 4               # feed repeater delay: the mid layer switches 3 redstone ticks after its plate, not in the same tick
 STAND = "glass"             # cradle around the riser ladders: clear, so the feeds read as wiring, not a trunk
 HALO = 5                    # ambient light around the surface (was 8): darker idle shell, stronger lit contrast
 BOTH = False                # plates span both hemispheres (same ladders), not only the left
@@ -337,7 +338,7 @@ def build(root, regions, stem_index, fills3):
                 blocks[W(*p1, k)] = "air"
                 blocks[W(*p1, k - 1)] = "redstone_wire"
                 blocks[W(*p1, k - 2)] = "smooth_stone"
-                blocks[W(*p2, k - 2)] = ("repeater", fl, 1)
+                blocks[W(*p2, k - 2)] = ("repeater", fl, MID_DELAY)
                 blocks[W(*p3, k - 2)] = "smooth_stone"
                 for a, b in mid["lamps"]:
                     blocks[W(a, b, k - 3)] = "redstone_lamp"

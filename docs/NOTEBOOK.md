@@ -273,3 +273,11 @@ Full record in `PHASE1_EVIDENCE.md`. Summary:
 - Better: in the three-quarter, side and front views, the lit regions show a dense lamp field instead of thin stripes. On an eight-way tie the whole left cortex reads as lit. The glass stand removes most of the tree-trunk look.
 - Not fixed: (1) at the wide camera, the brain covers about 10% of the frame, so activation barely reads. (2) A single-region win on the far side (e3, parietal) is hidden from the front reveal. (3) The right hemisphere stays dark: the 11_side_ground_multi image shows one lit half. (4) Halo 5 makes the idle brain darker than in round 2.
 - FPS (F3, 120 Hz vsync cap): idle 120/120; 8-way at 10/20/30 s 119/115/120; single 120/120/119. Server tick cost is unchanged from the server runs: P99 31 ms single, 51 ms on an 8-way tie.
+
+### 2026-11-22: Visual round 4 (camera first, tick budget), server-verified, no client screenshots yet
+- Rollback baseline tagged `baseline-28ms` (5d4e4cb).
+- Camera: an offline z-buffer render of the build's voxels scored candidate framings by brain share of frame, lit share for one region, and board in frame. New `1_reveal` (-60, -44, 30, yaw -45, pitch -13.6): rear three-quarter, whole brain plus part of the board. The old reveal is kept as `12_front_ground`. The default sign question is now the occipital one ("what colors are in a rainbow?"). In the offline render it lights 4.0% of the frame from the new camera; the old default (parietal) lit 0.3% from the old camera.
+- Tick budget: the extra cost came mostly from timing, not dust count. LINE=2 with the full mid layer is only 13.8k dust (baseline 10.6k), yet its 2-way tie stayed at 46-48 ms because each mid layer switched in the same tick as its plate. MID_DELAY=4 on the mid feed repeater splits them. Two runs: prefrontal 15.8/30.1 ms, 2-way 35.3/34.6, 8-way 35.8/33.2 (P99, worst 5-s window). Target <40 met.
+- MID_EFF filter added (keep a mid layer only if lamps right behind the shell / dust >= threshold); left at 0 with LINE=2. With LINE=1 it cut dust from 38.3k to 28.4k at no visible loss, but P99 stayed at 45-57.
+- Verification on the rebuilt test world: anatomy ALL OK (27,655 expected lamps, 0 foreign); suite 20/20; WTA 25/25.
+- Not done: client screenshots of round 4, and localized idle lighting (needs screenshots to judge).
