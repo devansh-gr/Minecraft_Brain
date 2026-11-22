@@ -69,6 +69,10 @@ def install(save):
     """Copy to a staging dir, check it against the source, then swap. The old install is kept until the swap
     succeeds and restored if it fails."""
     dst, stage, old = save / "datapacks" / "redstone_cortex", save / ".rc_staging", save / ".rc_old"
+    # recover an interrupted earlier run: old moved away but the new copy never renamed in, so old is the
+    # only working copy. If dst exists the atomic rename completed and old is a leftover.
+    if old.exists() and not dst.exists():
+        old.rename(dst)
     for d in (stage, old):
         if d.exists():
             shutil.rmtree(d)

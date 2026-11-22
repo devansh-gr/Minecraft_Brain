@@ -103,6 +103,16 @@ except OSError:
 Path.rename = orig_rename
 check("failed swap restores old install", (dst / "marker").exists() and not (A / ".rc_old").exists())
 
+# killed mid-swap: original moved to .rc_old, no datapack in place, a half staging dir left behind
+dst.rename(A / ".rc_old"); (A / ".rc_staging").mkdir()
+shutil.copytree = partial
+try:
+    I.install(A)
+except OSError:
+    pass
+shutil.copytree = real
+check("interrupted swap recovered from .rc_old", (dst / "marker").exists() and not (A / ".rc_old").exists())
+
 I.install(A)
 check("install matches source, old removed", I.tree(dst) == I.tree(I.SRC) and not (A / ".rc_old").exists())
 
