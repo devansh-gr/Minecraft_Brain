@@ -281,3 +281,13 @@ Full record in `PHASE1_EVIDENCE.md`. Summary:
 - MID_EFF filter added (keep a mid layer only if lamps right behind the shell / dust >= threshold); left at 0 with LINE=2. With LINE=1 it cut dust from 38.3k to 28.4k at no visible loss, but P99 stayed at 45-57.
 - Verification on the rebuilt test world: anatomy ALL OK (27,655 expected lamps, 0 foreign); suite 20/20; WTA 25/25.
 - Not done: client screenshots of round 4, and localized idle lighting (needs screenshots to judge).
+
+## 17. Hardware pivot: redstone does the arithmetic (2026-11-22, started)
+Goal: the forward pass (weighted products, sums, activation, inhibition) computed by physical redstone; the datapack only sets inputs and reads outputs. Developed on a separate flat test server (`server_hw/`, RCON 25597), so the brain world is untouched.
+
+- `hw/nor.py`: compiler from a NOR-gate netlist to redstone. Gate = stone block + wall torch (NOR of everything on its input lane). Every signal is a floor dust column; inputs branch off through a repeater (diode) and a stone step onto a lane of dust on glass two blocks up, which crosses the other columns without touching them. `Net` builds netlists with constant folding; `simulate` evaluates them in Python.
+- Primitives probed in game: repeater on glass, dust climbing onto glass, crossing isolation in both directions, wall-torch NOR. All behaved as assumed.
+- Full adder (9 NOR, 510 blocks): 8/8 input combinations correct in game, first build.
+- 2-4-2 network as a netlist (`hw/net242.py`, same equations as reference.py; weights 5-bit signed, biases 6-bit signed, lesion levers): 9,765 NOR gates, 0/3,000 mismatches against the reference in Python simulation, with random negative weights, biases and lesions.
+- Size problem: the crossbar layout costs one column per live signal and 8 rows per logic level. For the unrolled 2-4-2 (depth 353, up to 360 live signals) that is about 2,800 x 1,400 blocks, so not buildable. A lever-weighted 4-bit x 5-bit signed multiplier (337 gates) already spans 151 x 1,629 blocks, and its slowest signal takes over 45 s to arrive.
+- Torch burnout: a build left some torches burned out (the torch is unlit while its block is unpowered). `rs.place` now places torches last, after the circuit settles, and `rs.relight` re-places them.
