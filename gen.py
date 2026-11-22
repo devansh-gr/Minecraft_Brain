@@ -358,7 +358,7 @@ def main():
     (DP / "data/minecraft/tags/function").mkdir(parents=True)
     (DP / "pack.mcmeta").write_text(json.dumps({"pack": {
         "description": "Redstone Cortex v2", "min_format": 121, "max_format": 121}}))
-    (DP / "data/minecraft/tags/function/load.json").write_text(json.dumps({"values": ["brain:load"]}))
+    (DP / "data/minecraft/tags/function/load.json").write_text(json.dumps({"values": ["brain:boot", "brain:load"]}))
 
     grid, depth = lateral_map()
     W, H = grid.shape
@@ -536,7 +536,14 @@ def main():
     (DP / "data/minecraft/tags/function/tick.json").write_text(json.dumps({"values": ["brain:tick"]}))
     lo_x, hi_x = min(mx0, -4) - 2, max(mx0 + W, 36) + 2
     # only the two command limits the build itself needs; nothing else world-wide is changed
-    w("build_run", ["scoreboard players set #build_ok brain.st 0", "gamerule max_command_sequence_length 10000000",
+    # build_run guards itself (a direct call without #build_ok does nothing). Flags are consumed at the start, so an
+    # interrupted build leaves #build_ok and #drop_cleanup at 0; brain:boot (load tag) clears #building after a crash.
+    w("build_run", ["execute unless score #build_ok brain.st matches 1 run return run tellraw @a "
+                    + json.dumps({"text": "Redstone Cortex: build refused (not armed). Use /function brain:build.", "color": "red"}),
+                "scoreboard players set #build_ok brain.st 0", "scoreboard players set #building brain.st 1",
+                "scoreboard players set #do_cleanup brain.st 0",
+                "execute if score #drop_cleanup brain.st matches 1 run scoreboard players set #do_cleanup brain.st 1",
+                "scoreboard players set #drop_cleanup brain.st 0", "gamerule max_command_sequence_length 10000000",
                 "gamerule max_block_modifications 1000000", "kill @e[type=text_display,tag=brain]",
                 "scoreboard players set #state brain.st 0",
                 *([f"fill {U['stats']['bbox'][0]-2} {y} {U['stats']['bbox'][4]-2} {U['stats']['bbox'][1]+2} {min(y + 7, U['stats']['bbox'][3] + 2)} {U['stats']['bbox'][5]+2} air"
@@ -549,7 +556,10 @@ def main():
                 "function brain:build_labels", "function brain:ui/reset", "function brain:mem/show",
                 # opt-in only (dedicated build/test worlds): removes fresh items in the box, which cannot be told
                 # apart from a player's freshly dropped item
-                "execute if score #drop_cleanup brain.st matches 1 run function brain:build_cleanup"])
+                "execute if score #do_cleanup brain.st matches 1 run function brain:build_cleanup",
+                "scoreboard players set #do_cleanup brain.st 0", "scoreboard players set #building brain.st 0"])
+    w("boot", ["scoreboard objectives add brain.st dummy", *[f"scoreboard players set {f} brain.st 0"
+               for f in ("#build_ok", "#building", "#drop_cleanup", "#do_cleanup")]])
     w("build_board", B); w("build_tracts", T); w("build_cortex", C)
 
     # cleanup: torches and dust knocked off during this build drop as items in the same tick (Age 0).
@@ -562,6 +572,11 @@ def main():
                 lo[i % 3], hi[i % 3] = min(lo[i % 3], v), max(hi[i % 3], v)
     w("build_cleanup", [f"kill @e[type=item,x={lo[0]},y={lo[1]},z={lo[2]},dx={hi[0] - lo[0] + 1},dy={hi[1] - lo[1] + 1},"
                         f"dz={hi[2] - lo[2] + 1},nbt={{Age:0s}}]"])
+
+    # every build stage refuses unless called from inside build_run
+    for f in (DP / "data/brain/function").glob("build_*.mcfunction"):
+        if f.stem != "build_run":
+            f.write_text("execute unless score #building brain.st matches 1 run return fail\n" + f.read_text())
 
     # guarded entry point: brain:build only warns unless #build_ok is set (the build clears a large volume)
     box = f"the laboratory volume (x {lo[0]}..{hi[0]}, y {lo[1]}..{hi[1]}, z {lo[2]}..{hi[2]})"
