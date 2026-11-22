@@ -29,6 +29,9 @@ RISER_EXPOSED = 8            # a hidden feed's riser may show this much below th
 MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
 
 MID = True                  # a second lamp layer 2 below each plate, fed by a one-step dust stair (visual density)
+STAND = "glass"             # cradle around the riser ladders: clear, so the feeds read as wiring, not a trunk
+HALO = 5                    # ambient light around the surface (was 8): darker idle shell, stronger lit contrast
+BOTH = False                # plates span both hemispheres (same ladders), not only the left
 SEAL = True                 # fill the interior with tinted glass (light-engine cost)
 BAND_COST = 1000
 BAND = 3                    # plate cells kept within this distance of the plate edge
@@ -134,6 +137,9 @@ def build(root, regions, stem_index, fills3):
     N = len(regions)
     left = np.zeros(T.shape, bool)
     left[:mid] = True
+    lefthalf = left.copy()                  # for the coverage stat
+    if BOTH:
+        left[:] = True
     plate_k = [k for k in range(k0 + 1, T.shape[2]) if (BASE_Y + k - k0 - L1) % 4 == 0]
 
     # plate masks per region and level: inside the region, left hemisphere, behind the glass shell
@@ -400,7 +406,7 @@ def build(root, regions, stem_index, fills3):
         for k in range(k0, min(low[i, j], T.shape[2])):
             p = W(i, j, k)
             if p not in blocks:
-                blocks[p] = "polished_blackstone"
+                blocks[p] = STAND
     # light seal: every unused cell inside the brain becomes tinted glass (blocks light, conducts nothing),
     # so a switching lamp relights only its own few cells instead of the hollow interior
     if SEAL:
@@ -432,7 +438,7 @@ def build(root, regions, stem_index, fills3):
     ladder_cols = {W(li, lj, 0)[0::2] for li, lj in list(ladders.values()) + list(risers.values())}
     halo_pts = [W(a, b, c) for a, b, c in zip(hi[sel], hj[sel], hk[sel])
                 if W(a, b, c)[1] > -56 and W(a, b, c) not in blocks and W(a, b, c)[0::2] not in ladder_cols]
-    out += fills3(halo_pts, "light[level=8]")
+    out += fills3(halo_pts, f"light[level={HALO}]")
     exposed = {regions[r][0]: int(low[risers.get(r, q)] - k0) for r, q in ladders.items()}
     stats_lines = {regions[r][0]: (len(L), int(BASE_Y + kt - k0), W(*risers[r], kt), [W(*q, kt) for q in L], W(*ladders[r], kt)) for r, (L, kt) in lines.items()}
     # visible activation: share of each region's left-hemisphere shell voxels that are a lit lamp or glass
@@ -440,10 +446,11 @@ def build(root, regions, stem_index, fills3):
     litw = {r: set(v) for r, v in lit3.items()}
     cover = {}
     for r in range(N):
-        sh = [W(i, j, k) for i, j, k in zip(*np.nonzero(l1 & left & (Lb == r)))]
-        g = sum(1 for p in sh if any((p[0] + a, p[1] + b, p[2] + c) in litw[r]
-                                     for a, b, c in [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]))
-        cover[regions[r][0]] = round(g / max(len(sh), 1), 3)
+        for half, hm in (("L", lefthalf), ("R", ~lefthalf)):
+            sh = [W(i, j, k) for i, j, k in zip(*np.nonzero(l1 & hm & (Lb == r)))]
+            g = sum(1 for p in sh if any((p[0] + a, p[1] + b, p[2] + c) in litw[r]
+                                         for a, b, c in [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]))
+            cover[regions[r][0] + half] = round(g / max(len(sh), 1), 3)
     stats = dict(stairs=stairs, cover=cover, exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
     return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
