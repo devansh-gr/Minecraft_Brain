@@ -267,3 +267,9 @@ Full record in `PHASE1_EVIDENCE.md`. Summary:
 - FPS (F3, vsync fifo, 120 Hz cap): reveal idle 117; single-region run at 10/20/30/36 s: 119/115/120/120; eight-way run: 120/110/120/120. The cap hides headroom; the minimum was 110.
 - Visual defects, by severity: (1) activation reads as sparse orange lamp stripes on the coloured cortex and is hard to see at reveal and wide distance; (2) the support stand reads as a tree trunk under the brain; (3) the right hemisphere never lights (decorative), which is visible from the side and front; (4) with daylight on, the lamps wash out, so a world that advances time needs night locked for display.
 - No code changed.
+
+### 2026-11-22: Visual round 3, client before/after (BrainU, test copy)
+- Build f349b18 (second lamp layer, LINE=1, glass stand, halo 5). Same cameras and night setting as round 2. Images in `img/visual_round3/` (01-12, 1920x1080); `compare_idle/single/multi.jpg` put round 2 on the left and round 3 on the right.
+- Better: in the three-quarter, side and front views, the lit regions show a dense lamp field instead of thin stripes. On an eight-way tie the whole left cortex reads as lit. The glass stand removes most of the tree-trunk look.
+- Not fixed: (1) at the wide camera, the brain covers about 10% of the frame, so activation barely reads. (2) A single-region win on the far side (e3, parietal) is hidden from the front reveal. (3) The right hemisphere stays dark: the 11_side_ground_multi image shows one lit half. (4) Halo 5 makes the idle brain darker than in round 2.
+- FPS (F3, 120 Hz vsync cap): idle 120/120; 8-way at 10/20/30 s 119/115/120; single 120/120/119. Server tick cost is unchanged from the server runs: P99 31 ms single, 51 ms on an 8-way tie.
