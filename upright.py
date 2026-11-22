@@ -29,6 +29,7 @@ RISER_EXPOSED = 8            # a hidden feed's riser may show this much below th
 MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
 
 MID = True                  # a second lamp layer 2 below each plate, fed by a one-step dust stair (visual density)
+MID_EFF = 0.1               # keep a mid layer only if (lamps it lights right behind the shell) / (its dust) >= this
 STAND = "glass"             # cradle around the riser ladders: clear, so the feeds read as wiring, not a trunk
 HALO = 5                    # ambient light around the surface (was 8): darker idle shell, stronger lit contrast
 BOTH = False                # plates span both hemispheres (same ladders), not only the left
@@ -131,6 +132,7 @@ def design_plate(cells, feed):
 def build(root, regions, stem_index, fills3):
     T, Lb, mid = volume(root, regions, stem_index)
     l1, l2 = shells(T)
+    behind = ndimage.binary_dilation(l1) & ~l1     # cells touching the shell: lamps there show through the glass
     ii, jj, kk = np.nonzero(T)
     i0, k0, jc = ii.min(), kk.min(), (jj.min() + jj.max()) // 2
     W = lambda i, j, k: (int(CX + j - jc), int(BASE_Y + k - k0), int(FRONT_Z + i - i0))   # -> (x, y, z)
@@ -313,7 +315,8 @@ def build(root, regions, stem_index, fills3):
                                 a_, b_ = a_ + ea, b_ + eb
                         c2.add(p3)
                         d2 = design_plate(c2, p3)
-                        if len(d2["lit"]) >= 4:
+                        vis = sum(1 for a, b in d2["glow"] if behind[a, b, k - 3])
+                        if len(d2["lit"]) >= 4 and vis >= MID_EFF * len(d2["dust"]):
                             mid, step = d2, (p0, p1, p2, p3, (da, db))
                             cells = cells - {p1}
                             break
@@ -451,7 +454,8 @@ def build(root, regions, stem_index, fills3):
             g = sum(1 for p in sh if any((p[0] + a, p[1] + b, p[2] + c) in litw[r]
                                          for a, b, c in [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]))
             cover[regions[r][0] + half] = round(g / max(len(sh), 1), 3)
-    stats = dict(stairs=stairs, cover=cover, exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()),
+    stats = dict(stairs=stairs, cover=cover, exposed=exposed, lines=stats_lines, voxels=int(T.sum()), plates=len(plates), stripes=len(stripes), dust=sum(len(d["dust"]) for d in plates.values()), mid_dust={regions[r][0]: sum(len(d["dust"]) for (q, _), d in mids.items() if q == r) for r in range(N)},
+                 plate_dust={regions[r][0]: sum(len(d["dust"]) for (q, _), d in plates.items() if q == r) for r in range(N)},
                  lit=sum(len(v) for v in lit3.values()), bbox=(min(xs), max(xs), min(ys), max(ys), min(zs), max(zs)))
-    return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats,
+    return dict(cmds=out, base=base, probe=probe, lit=lit3, stats=stats, blocks=blocks,
                 footprint={(x, z) for x, y, z in blocks if y <= BASE_Y + 2})

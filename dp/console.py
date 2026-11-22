@@ -39,7 +39,7 @@ def console(cx, R, colors):
           f"fill 0 {DESK} {TZ} 30 {DESK} {TZ - 1} polished_deepslate",
           f"fill 0 {DESK} {LZ} 32 {DESK} {LZ} polished_blackstone"]
     C += [f"setblock {SIGN[0]} {SIGN[1]} {SIGN[2]} oak_sign[rotation=8]",
-          'data merge block %d %d %d {front_text:{messages:["what is seven","times eight?","",""]}}' % SIGN]
+          'data merge block %d %d %d {front_text:{messages:["what colors are","in a rainbow?","",""]}}' % SIGN]
     for n, x in BTN.items():
         C.append(f"setblock {x} {L1} {CZ} polished_blackstone_button[face=floor,facing=north]")
     for x in REPLAY_X:
