@@ -1,7 +1,7 @@
-import socket, struct, sys
+import os, socket, struct, sys
 def cmd(c, s=[None]):
     if s[0] is None:
-        s[0] = socket.create_connection(("127.0.0.1", 25599)); _send(s[0], 3, "brain"); _recv(s[0])
+        s[0] = socket.create_connection(("127.0.0.1", int(os.environ.get("RCON_PORT", 25599)))); _send(s[0], 3, "brain"); _recv(s[0])
     _send(s[0], 2, c); return _recv(s[0])
 def _send(s, t, p):
     d = struct.pack("<ii", 1, t) + p.encode() + b"\0\0"; s.sendall(struct.pack("<i", len(d)) + d)
