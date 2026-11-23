@@ -352,3 +352,7 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
   - Total: about 4 x (4 x 16 + 8) + 2 x 10, roughly 310 slots, about 80 min on one MAC. With 4 MACs, one per hidden neuron (~200k blocks), about 20 min.
   - New hardware needed: u state registers fed from the activation output, a wider crossbar (inputs, u, I) and a longer sequencer.
   - Verdict: functionally achievable with the parts proven here. The slot time (MAC settle about 10 s in game) dominates, so shortening it comes before scaling.
+
+### 17.p Tick-rate benchmark (2026-11-23)
+- hw/test_neuron_tps.py: all harness waits are in game ticks, achieved TPS is measured from game time, and output is read after the strobe pulse is observed. 24/24 correct at 20, 30, 40, 60, 80 and 100 TPS (docs/hw_neuron_tps.md). Achieved TPS equalled the request at every rate.
+- The computation is 2850 game ticks at any rate. At 100 TPS one evaluation takes 28.8 s (vs 144 s at 20 TPS) and the full cycle with drain about 34 s. The weight-change pair (w0 4 -> 8, y 4 -> 9) passed at every rate.
