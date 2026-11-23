@@ -1,0 +1,6 @@
+17:17:54 idle hold 60 s (night, time frozen)
+17:18:54 RUN 'what is seven times eight'
+17:19:26 COMPLETE (readout)
+17:19:41 RUN 'can you hear the music?'
+17:20:13 COMPLETE (readout)
+17:20:28 done
