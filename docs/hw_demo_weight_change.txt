@@ -1,0 +1,9 @@
+10:09:18 tick rate 20.0 TPS
+10:09:18 load x0=5 x1=3 w0=4 w1=-2 b=3
+10:09:23 stored (read from latches) (5, 3, 4, -2, 3)
+10:09:23 START
+10:11:47 strobe seen=True run 142.5 s (2850 game ticks); output latch y=4 (reference 4); A=17 C=0
+10:12:07 load x0=5 x1=3 w0=8 w1=-2 b=3
+10:12:12 stored (read from latches) (5, 3, 8, -2, 3)
+10:12:12 START
+10:14:36 strobe seen=True run 142.5 s (2850 game ticks); output latch y=9 (reference 9); A=37 C=0
