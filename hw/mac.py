@@ -51,6 +51,7 @@ class Lay:
                 d = (nxt[0] - x, nxt[2] - z)
                 self.rep(x, l, z, {(1, 0): "west", (-1, 0): "east", (0, 1): "north", (0, -1): "south"}[d], net); st = 15
                 continue
+            if nxt and nxt[1] < l: self.put(x, l - 1, z, "stone")      # power only steps down off a conductor
             if (x, l, z) not in self.B: self.dust(x, l, z, net)
             st -= 1
         return st
@@ -74,7 +75,7 @@ def cell():
     L = Lay()
     # NOT x row (L2, z=0) with one repeater, tap at x=9 down to the AND comparator side
     L.rep(11, 2, 0, "east", "nx"); L.rep(-4, 2, 0, "east", "nx"); L.line("nx", 2, [(12, 0), (-15, 0)])
-    L.dust(9, 2, 1, "nx"); L.dust(9, 1, 2, "nx"); L.line("nx", 0, [(9, 3), (9, 4)])
+    L.put(9, 1, 1, "stone"); L.dust(9, 2, 1, "nx"); L.dust(9, 1, 2, "nx"); L.line("nx", 0, [(9, 3), (9, 4)])
     L.rep(9, 0, 5, "north", "nx")
     # w lane (floor, x=11) with branch into the AND comparator rear
     L.line("w", 0, [(11, -1), (11, 31)]); L.rep(11, 0, 2, "north", "w"); L.rep(11, 0, 16, "north", "w"); L.rep(11, 0, 28, "north", "w")
@@ -93,12 +94,12 @@ def cell():
     # c row (L2, z=4) from the east edge: branch south at x=7 into XOR2 v, west to x=-3 then down to the cluster
     L.rep(10, 2, 4, "east", "c"); L.rep(2, 2, 4, "east", "c"); L.line("c", 2, [(12, 4), (-3, 4)])
     L.rep(7, 2, 10, "north", "c"); L.rep(7, 2, 17, "north", "c"); L.line("c", 2, [(7, 5), (7, 19)])
-    L.dust(-3, 1, 5, "c"); L.line("c", 0, [(-3, 6), (-3, 25)])
+    L.put(-3, 1, 4, "stone"); L.dust(-3, 1, 5, "c"); L.line("c", 0, [(-3, 6), (-3, 25)])
     L.rep(-3, 0, 12, "north", "c"); L.rep(-3, 0, 21, "north", "c")
     # p: to XOR2 u, and west on L2 (z=19) down into the cluster at x=-6
     L.dust(2, 0, 19, "p"); L.rep(3, 0, 19, "west", "p"); L.dust(4, 0, 19, "p")
     L.dust(1, 0, 19, "p"); L.dust(0, 1, 19, "p"); L.dust(-1, 2, 19, "p"); L.rep(-2, 2, 19, "east", "p")
-    L.line("p", 2, [(-3, 19), (-6, 19)]); L.dust(-6, 1, 20, "p"); L.dust(-6, 0, 21, "p")
+    L.line("p", 2, [(-3, 19), (-6, 19)]); L.put(-6, 1, 19, "stone"); L.dust(-6, 1, 20, "p"); L.dust(-6, 0, 21, "p")
     # carry cluster around D=(-6,23): NP = 15 - p, K = c - NP, G = a - p, cout = K | G
     L.rep(-6, 0, 22, "north", "p"); L.dust(-6, 0, 23, "p")
     L.put(-5, 0, 22, "redstone_block"); L.put(-5, 0, 23, CMP % "north", "np"); L.dust(-5, 0, 24, "np")
@@ -110,7 +111,7 @@ def cell():
     L.dust(-14, 1, 5, "cout"); L.line("cout", 2, [(-14, 4), (-15, 4)])
     # s: south, east along z=30 over the w lane on L2, then down to the next row's a column at x=29
     L.line("s", 0, [(5, 29), (5, 30), (8, 30)]); L.rep(6, 0, 30, "west", "s")
-    L.dust(9, 1, 30, "s"); L.line("s", 2, [(10, 30), (12, 30)]); L.dust(13, 1, 30, "s")
+    L.dust(9, 1, 30, "s"); L.line("s", 2, [(10, 30), (12, 30)]); L.put(12, 1, 30, "stone"); L.dust(13, 1, 30, "s")
     L.line("s", 0, [(14, 30), (29, 30), (29, 31)]); L.rep(20, 0, 30, "west", "s")
     return L
 
@@ -159,17 +160,17 @@ def system():
                            (xl, 3, zrow(j) - 3), (xl, 4, zrow(j) - 4), (xl, 4, -26), (ox + 1, 4, -26), (ox + 1, 4, -24),
                            (ox + 1, 3, -23), (ox + 1, 2, -22), (ox + 1, 1, -21), (ox + 1, 0, -20), (ox + 1, 0, -14)], strength=6)
         L.put(ox + 1, 0, -13, CMP % "north", A)                       # d = A - RST
-        L.rep(ox, 0, -13, "west", "rst"); L.dust(ox - 1, 0, -13, "rst"); L.dust(ox - 1, 1, -12, "rst"); L.dust(ox - 1, 2, -11, "rst")
+        L.rep(ox, 0, -13, "west", "rst"); L.dust(ox - 1, 0, -13, "rst"); L.dust(ox - 1, 1, -12, "rst"); L.put(ox - 1, 1, -11, "stone"); L.dust(ox - 1, 2, -11, "rst")
         L.rep(ox + 1, 0, -12, "north", A); L.line(A, 0, [(ox + 1, -11), (ox + 1, -8)])
         L.rep(ox + 1, 0, -7, "north", A)                             # latch, locked by the LOCK row
-        L.rep(ox + 2, 0, -7, "east", "lock"); L.dust(ox + 3, 0, -7, "lock"); L.dust(ox + 3, 1, -6, "lock"); L.dust(ox + 3, 2, -5, "lock")
+        L.rep(ox + 2, 0, -7, "east", "lock"); L.dust(ox + 3, 0, -7, "lock"); L.dust(ox + 3, 1, -6, "lock"); L.put(ox + 3, 1, -5, "stone"); L.dust(ox + 3, 2, -5, "lock")
         L.line(A, 0, [(ox + 1, -6), (ox + 1, -1)])
     # w4 broadcast (L2, z=-30) with taps into lanes 4..12; lanes w0..w3 start at z=-20
     L.path("w4", [(11 - 4 * PX, 2, -30), (11 - (NB - 1) * PX, 2, -30)])
     for k in range(NB):
         ox = -PX * k
         if k >= 4:
-            L.rep(ox + 11, 2, -28, "north", "w4"); L.line("w4", 2, [(ox + 11, -29), (ox + 11, -22)]); L.dust(ox + 11, 1, -21, "w4")
+            L.rep(ox + 11, 2, -28, "north", "w4"); L.put(ox + 11, 1, -22, "stone"); L.line("w4", 2, [(ox + 11, -29), (ox + 11, -22)]); L.dust(ox + 11, 1, -21, "w4")
         L.line("w%d" % min(k, 4), 0, [(ox + 11, -20), (ox + 11, -2)])
         L.rep(ox + 11, 0, -17, "north", "w%d" % min(k, 4)); L.rep(ox + 11, 0, -7, "north", "w%d" % min(k, 4))
     # RST row (L2, z=-10) and LOCK row (L2, z=-4), both fed from the east end, repeaters clear of the taps

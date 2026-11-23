@@ -43,6 +43,18 @@ class Sim:
     # ---------- dust connectivity ----------
     def _wire_graph(self):
         self.wires = [p for p, k in self.kind.items() if k == "redstone_wire"]
+        # recv[p]: dust that p takes power from (MC calculateTargetStrength): same level; up-diagonal only
+        # through a conductor neighbour with no conductor above p; down-diagonal only past a non-conductor
+        self.recv = {p: [] for p in self.wires}
+        for p in self.wires:
+            above_c = self.k(add(p, UP)) in CONDUCTOR
+            for d in H:
+                n = add(p, d); kn = self.k(n)
+                if kn == "redstone_wire": self.recv[p].append(n)
+                if kn in CONDUCTOR and not above_c:
+                    if self.k(add(n, UP)) == "redstone_wire": self.recv[p].append(add(n, UP))
+                elif kn not in CONDUCTOR and self.k(add(n, DOWN)) == "redstone_wire":
+                    self.recv[p].append(add(n, DOWN))
         self.adj = {p: [] for p in self.wires}
         self.points = {}
         for p in self.wires:
@@ -90,10 +102,13 @@ class Sim:
                 elif kn in ("repeater", "comparator") and self.front(n) == w: s = max(s, self.out[n])
             lvl[w] = s
         # max-propagation along dust with decay 1
+        send = {w: [] for w in self.wires}
+        for w, rs in self.recv.items():
+            for r in rs: send[r].append(w)
         q = deque(w for w in self.wires if lvl[w] > 0)
         while q:
             w = q.popleft()
-            for n in self.adj[w]:
+            for n in send[w]:
                 if lvl[w] - 1 > lvl[n]: lvl[n] = lvl[w] - 1; q.append(n)
         weak = {}
         for w in self.wires:
