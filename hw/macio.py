@@ -37,7 +37,7 @@ def tickstats():
     t = cmd("tick query"); g = lambda k: float(re.search(k + r":\s*([\d.]+)ms", t).group(1))
     return g("P50"), g("P95"), g("P99")
 
-def build():
+def build(L=L, X0=X0, Z0=Z0):
     from rs import place
     W = {(x + X0, Y[l], z + Z0): b for (x, l, z), b in L.B.items()}
     xs = [p[0] for p in W]; zs = [p[2] for p in W]

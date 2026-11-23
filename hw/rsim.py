@@ -8,7 +8,7 @@ from collections import deque
 D = {"north": (0, 0, -1), "south": (0, 0, 1), "west": (-1, 0, 0), "east": (1, 0, 0)}
 H = list(D.values())
 UP, DOWN = (0, 1, 0), (0, -1, 0)
-CONDUCTOR = {"stone", "smooth_stone"}
+CONDUCTOR = {"stone", "smooth_stone", "redstone_lamp"}         # a lamp is a solid block: a repeater facing it powers adjacent dust
 SUPPORT = CONDUCTOR | {"glass", "redstone_block"}
 
 

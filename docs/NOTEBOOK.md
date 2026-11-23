@@ -329,3 +329,26 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - Inference estimates at the measured 10 s/op (MACs only, flush 4 ops per neuron, bias as one op; inhibition/activation unit not yet built):
   - 2-4-2, one MAC: 4x(2+1+4) + 2x(4+1+4) = 46 ops, about 7.7 min. With 4 MACs in parallel: 7 + 9 = 16 cycles, about 2.7 min.
   - 8-16-8, one MAC: 16x(1.5+1+4) + 8x(16+1+4) = 272 ops, about 45 min. With 8 MACs (one per output, hidden shared): about 13 + 21 = 34 cycles, about 6 min, ~280k blocks.
+
+### 17.o One physical redstone neuron (2026-11-23)
+- hw/neuron.py: y = clamp((w0*x0 + w1*x1 + b) // 4, 0, 15) on the carry-save MAC. Equation as reference.py output units (O_DIV = 4). Commands place data pins, pulse WE and START, and read block states. They never compute.
+- Registers: 24 repeater latches (x0, x1 4 bit; w0, w1 5 bit signed; b 6 bit signed), written through 4 WE rows (LOCK_r = 15 - WE_r). Readback after the pins are cleared confirms physical storage.
+- Crossbar: per stored bit, AND = data - NOTsel (one subtract comparator); OR into the MAC x/w lanes by glass climbs (one-way). Bias needs no command split: slot 3 is x = 2 with w = b bits 1..5, slot 4 is x = 1 with w = b bit 0.
+- Sequencer: RUN latch (comparator loop) plus a 9-row delay-line raster, 40 repeaters per row = 160 rt per slot. Windows SEL_k = tap(k) - tap(k+1); GO_k = tap(a) - tap(a + 8 rt). Slots: 0 reset, 1-4 MAC ops, 5-7 carry flush (3 flushes always suffice: the lowest carry weight starts at 4 and rises 4 per op), row 8 strobes the output latch and clears RUN.
+- Activation: S bits 2..12 tapped on L4 (floor /4 by wiring), sat = OR(q4..q9), out_k = (q_k | sat) - sign, 4-bit output latch + lamps.
+- 49,164 blocks (MAC 34,375; sequencer 659 + crossbar 1,210 + activation 110 + lanes/taps ~12.8k), footprint 460 x 501.
+- In game at (1000, 1300) vs simulator, same 10 cases (docs/hw_neuron_game.txt, docs/hw_neuron_sim.txt): 10/10 both. A, C and y identical in every case.
+  - The cases cover saturation (481 -> 15), negative sums (-97, -4 -> 0), zero, the extreme -512, and floor of non-multiples (14 -> 3, 41 -> 10).
+  - Weight change: w0 4 -> 8 with all else equal moved y from 4 to 9.
+- Latency (in game, measured): load 4.8 s, START to RUN clear 143.3 s, output latch 0.6 s later, so about 149 s per evaluation. The next START must wait one slot (20 s used) while the delay line drains, so the cycle is about 170 s. Tick time P99 <= 43 ms (20 TPS held).
+- Bugs found in game, then fixed and modelled:
+  - The harness cleared data pins before the LOCK row re-asserted (1 s across 9 tiles).
+  - 128 rt slots gave too little MAC settle in game (A = 112 for 225); 160 rt slots fixed it (settle >= 125 rt).
+  - Redstone lamps are solid: a lit output latch powered the lamp, the lamp powered the adjacent lock row and froze the output latch. rsim now treats lamps as conductors, and the lock row moved one block off the lamps.
+  - Restarting less than one slot after RUN clears corrupts the reset window.
+- 2-4-2 feasibility at the measured 16 s slot:
+  - Inhibition fits the MAC as one more op: (s - 4I)//4 = s//4 - I, so x = I, w = -4. The leak u + (d - u + 1)//2 = (d + u + 1)//2 is 3 MAC ops plus a 1-bit shift.
+  - Per hidden neuron per step: about 9 slots plus about 7 for the leak. Per step, I = sum(u)//16 needs about 8 slots.
+  - Total: about 4 x (4 x 16 + 8) + 2 x 10, roughly 310 slots, about 80 min on one MAC. With 4 MACs, one per hidden neuron (~200k blocks), about 20 min.
+  - New hardware needed: u state registers fed from the activation output, a wider crossbar (inputs, u, I) and a longer sequencer.
+  - Verdict: functionally achievable with the parts proven here. The slot time (MAC settle about 10 s in game) dominates, so shortening it comes before scaling.

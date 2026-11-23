@@ -1,0 +1,12 @@
+x=(15, 15) w=(15, 15) b= 31 stored=ok sum=  481 A=  481 C=0 y=15 want 15 OK  load 4.8s run(START->RUN clear) 143.3s P99 8.1ms
+x=(7, 3) w=(-16, 5) b=  0 stored=ok sum=  -97 A=  -97 C=0 y= 0 want  0 OK  load 4.8s run(START->RUN clear) 143.3s P99 14.0ms
+x=(0, 0) w=(0, 0) b=  0 stored=ok sum=    0 A=    0 C=0 y= 0 want  0 OK  load 4.8s run(START->RUN clear) 143.2s P99 5.2ms
+x=(9, 12) w=(3, -2) b= -7 stored=ok sum=   -4 A=   -4 C=0 y= 0 want  0 OK  load 4.8s run(START->RUN clear) 143.3s P99 18.3ms
+x=(5, 3) w=(4, -2) b=  3 stored=ok sum=   17 A=   17 C=0 y= 4 want  4 OK  load 4.8s run(START->RUN clear) 143.3s P99 20.5ms
+x=(5, 3) w=(8, -2) b=  3 stored=ok sum=   37 A=   37 C=0 y= 9 want  9 OK  load 4.8s run(START->RUN clear) 143.4s P99 40.0ms
+x=(15, 15) w=(-16, -16) b=-32 stored=ok sum= -512 A= -512 C=0 y= 0 want  0 OK  load 4.8s run(START->RUN clear) 143.4s P99 43.0ms
+x=(10, 6) w=(3, 2) b= -1 stored=ok sum=   41 A=   41 C=0 y=10 want 10 OK  load 4.8s run(START->RUN clear) 143.4s P99 38.6ms
+x=(1, 1) w=(1, 1) b=  2 stored=ok sum=    4 A=    4 C=0 y= 1 want  1 OK  load 4.8s run(START->RUN clear) 143.3s P99 17.9ms
+x=(3, 0) w=(5, 0) b= -1 stored=ok sum=   14 A=   14 C=0 y= 3 want  3 OK  load 4.8s run(START->RUN clear) 143.3s P99 37.5ms
+10/10
+exit=0
