@@ -1,0 +1,5 @@
+cycle D= 7s  wall   8.0 s/op over 8 ops  A=     5 want   -123 C=0 WRONG  MSPT P95 max 26.6 P99 max 29.6
+
+[exited with code 0]
+cycle D=10s  wall  11.0 s/op over 8 ops  A=  -198 want   -198 C=0 OK  MSPT P95 max 18.0 P99 max 21.7
+cycle D= 9s  wall  10.0 s/op over 8 ops  A=  -123 want   -123 C=0 OK  MSPT P95 max 21.9 P99 max 27.9

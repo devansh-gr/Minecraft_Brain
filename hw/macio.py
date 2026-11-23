@@ -42,10 +42,16 @@ def build():
     W = {(x + X0, Y[l], z + Z0): b for (x, l, z), b in L.B.items()}
     xs = [p[0] for p in W]; zs = [p[2] for p in W]
     bx = (min(xs) - 2, max(xs) + 2); bz = (min(zs) - 2, max(zs) + 2)
-    for x in range(bx[0], bx[1] + 1, 240):
-        cmd(f"forceload add {x} {bz[0]} {min(x + 239, bx[1])} {bz[1]}")
+    for x in range(bx[0], bx[1] + 1, 128):                       # <= 256 chunks per forceload command
+        for z in range(bz[0], bz[1] + 1, 128):
+            r = cmd(f"forceload add {x} {z} {min(x + 127, bx[1])} {min(z + 127, bz[1])}")
+            assert "rror" not in r and "too many" not in r.lower(), r
+    time.sleep(3)
     for y in range(-52, -61, -1):
         for x in range(bx[0], bx[1] + 1, 200):
             for z in range(bz[0], bz[1] + 1, 160):
                 cmd(f"fill {x} {y} {z} {min(x + 199, bx[1])} {y} {min(z + 159, bz[1])} air")
-    place(W); return len(W), bx[1] - bx[0] - 3, bz[1] - bz[0] - 3
+    place(W)
+    missing = [p for p, b in list(W.items())[::97] if "passed" not in cmd("execute if block %d %d %d %s" % (*p, b.split("[")[0]))]
+    assert not missing, ("blocks missing after build", missing[:5])
+    return len(W), bx[1] - bx[0] - 3, bz[1] - bz[0] - 3

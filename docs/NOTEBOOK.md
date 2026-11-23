@@ -318,3 +318,14 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - 30,133 blocks, footprint 465 x 227. Commands only set x/w/GO/RST blocks and read latch states.
 - Bug found in game, then modelled: dust power steps down only off a conductor (dust on glass sends power up, not down). rsim now models it; every descending step sits on stone.
 - In game (docs/hw_mac_run1.txt): physical reset to 0, then 10 back-to-back ops incl. negative weights, 11/11 correct. Settle 8.6-13.1 s, write-back 7-12 s, MSPT 0.9-1.4 ms (20 TPS).
+
+### 17.n MAC validation and throughput (2026-11-22)
+- Ripple MAC in game: overflow wrap 22/22 (docs/hw_mac_overflow.txt); robustness 6/6: physical reset, input changes without GO leave A unchanged, 3 GO pulses = 3 MACs, reset asserted mid-computation, 30 s idle retention (docs/hw_mac_robust.txt).
+- Wall-clock cycle sweep (inputs set, wait D, GO; A read once at the end): ripple correct at 17.3 s/op, wrong at 12.7 s/op. MSPT during switching P95 <= 24 ms, P99 <= 31 ms (20 TPS held).
+- Critical path was the 13-bit carry ripple (about 7 repeaters per bit). Replaced by carry-save accumulation: state (S, C), carries go to the next row instead of along it, so an op has no horizontal ripple. Readout: 2 to 4 physical flush ops (x = 0) move carries out until C = 0, then S holds the binary value (no command-side addition).
+- Clock skew: LOCK row now fed from its centre; bits 0..2 feedback lanes go straight up the east side.
+- CSA in game (34,375 blocks, 393 x 275, docs/hw_csa_sweep.txt): correct at 13.0, 11.0 and 10.0 s/op, wrong at 8.0 s/op. Measured 10 s/op is 1.7x the ripple MAC. MSPT P99 <= 30 ms.
+- Build bug found: forceload of more than 256 chunks fails silently; build() now slices forceload and spot-checks placed blocks.
+- Inference estimates at the measured 10 s/op (MACs only, flush 4 ops per neuron, bias as one op; inhibition/activation unit not yet built):
+  - 2-4-2, one MAC: 4x(2+1+4) + 2x(4+1+4) = 46 ops, about 7.7 min. With 4 MACs in parallel: 7 + 9 = 16 cycles, about 2.7 min.
+  - 8-16-8, one MAC: 16x(1.5+1+4) + 8x(16+1+4) = 272 ops, about 45 min. With 8 MACs (one per output, hidden shared): about 13 + 21 = 34 cycles, about 6 min, ~280k blocks.
