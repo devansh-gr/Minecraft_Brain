@@ -71,7 +71,8 @@ class Lay:
             self.put(dx + ox, l, dz + oz, b)
 
 
-def cell():
+def cell(csa=False):
+    """csa=True: carry-save cell, carry enters from the top at x=3 and leaves at the bottom (next row, same column)."""
     L = Lay()
     # NOT x row (L2, z=0) with one repeater, tap at x=9 down to the AND comparator side
     L.rep(11, 2, 0, "east", "nx"); L.rep(-4, 2, 0, "east", "nx"); L.line("nx", 2, [(12, 0), (-15, 0)])
@@ -92,7 +93,11 @@ def cell():
     X, _, _ = xor_cell()
     L.sub(X, 0, 12); L.sub(X, 3, 22)
     # c row (L2, z=4) from the east edge: branch south at x=7 into XOR2 v, west to x=-3 then down to the cluster
-    L.rep(10, 2, 4, "east", "c"); L.rep(2, 2, 4, "east", "c"); L.line("c", 2, [(12, 4), (-3, 4)])
+    if csa:
+        L.rep(3, 0, 1, "north", "c"); L.line("c", 0, [(3, -1), (3, 2)]); L.dust(3, 1, 3, "c")
+        L.rep(2, 2, 4, "east", "c"); L.line("c", 2, [(3, 4), (7, 4)]); L.line("c", 2, [(3, 4), (-3, 4)])
+    else:
+        L.rep(10, 2, 4, "east", "c"); L.rep(2, 2, 4, "east", "c"); L.line("c", 2, [(12, 4), (-3, 4)])
     L.rep(7, 2, 10, "north", "c"); L.rep(7, 2, 17, "north", "c"); L.line("c", 2, [(7, 5), (7, 19)])
     L.put(-3, 1, 4, "stone"); L.dust(-3, 1, 5, "c"); L.line("c", 0, [(-3, 6), (-3, 25)])
     L.rep(-3, 0, 12, "north", "c"); L.rep(-3, 0, 21, "north", "c")
@@ -107,8 +112,11 @@ def cell():
     L.put(-7, 0, 23, CMP % "north", "cout"); L.dust(-7, 0, 22, "a"); L.rep(-8, 0, 22, "west", "a")
     L.line("cout", 0, [(-6, 25), (-7, 25), (-7, 24)])
     # cout: west along z=25, north along x=-14, up to L2 and out of the west edge at z=4
-    L.line("cout", 0, [(-8, 25), (-14, 25), (-14, 6)]); L.rep(-10, 0, 25, "east", "cout"); L.rep(-14, 0, 20, "south", "cout"); L.rep(-14, 0, 8, "south", "cout")
-    L.dust(-14, 1, 5, "cout"); L.line("cout", 2, [(-14, 4), (-15, 4)])
+    if csa:
+        L.rep(-2, 0, 27, "west", "cout"); L.line("cout", 0, [(-7, 25), (-7, 27), (3, 27), (3, 31)])
+    else:
+        L.line("cout", 0, [(-8, 25), (-14, 25), (-14, 6)]); L.rep(-10, 0, 25, "east", "cout"); L.rep(-14, 0, 20, "south", "cout"); L.rep(-14, 0, 8, "south", "cout")
+        L.dust(-14, 1, 5, "cout"); L.line("cout", 2, [(-14, 4), (-15, 4)])
     # s: south, east along z=30 over the w lane on L2, then down to the next row's a column at x=29
     L.line("s", 0, [(5, 29), (5, 30), (8, 30)]); L.rep(6, 0, 30, "west", "s")
     L.dust(9, 1, 30, "s"); L.line("s", 2, [(10, 30), (12, 30)]); L.put(12, 1, 30, "stone"); L.dust(13, 1, 30, "s")
@@ -119,13 +127,13 @@ def cell():
 NB, XB, WB = 13, 4, 5       # accumulator bits (signed), x bits (unsigned), w bits (signed)
 
 
-def array():
+def array(csa=False):
     """Rows i = x bits, columns k: cell (i,k) adds w_min(k,4)*x_i into result bit k+i.
     Returns layout plus pin positions: A inputs, w lane tops, x inputs, result bit outputs."""
     L = Lay()
     for i in range(XB):
         for k in range(NB - i):
-            C = cell()
+            C = cell(csa)
             for (x, l, z), b in C.B.items():
                 L.put(x - k * PX, l, z + i * PZ, b, C.net.get((x, l, z)))
         z0 = i * PZ                                       # NOT x_i generator at the east end of row i
