@@ -297,5 +297,11 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 
 ### 17.x Comparator full adder (2026-11-22)
 - hw/cells.py fa_cell(): two comparator XOR cells plus a comparator carry mux (NP = 15 - p, K = c - NP, G = a - p, cout = K | G).
-- 233 blocks, 23 x 19 footprint, no torches (no burnout). The torch NOR full adder was 9 gates in a crossbar band.
+- 235 blocks after the fix (233 before), 23 x 19 footprint, no torches (no burnout). The torch NOR full adder was 9 gates in a crossbar band.
 - In game on the HW server: 8/8 input combinations correct (hw/test_fa_cmp.py). First run was 4/8: one missing dust at the XOR2 b feed, so c never reached the sum path.
+
+### 17.y Review 463baaf fixes (2026-11-22)
+- hw/nor.py compile() referenced an undefined `level` (copy of the compile2 line): NameError on every compile() call, so test_fa.py was broken. Line removed.
+- hw/test_offline.py: server-free regression (compile, compile2, FA netlist simulation, cell block counts). It reproduced the NameError before the fix and passes after.
+- All hardware tests now exit nonzero on any wrong output (test_fa, test_fa_cmp, test_xor, test_mul, net242).
+- The unrolled 9,765-gate 2-4-2 is frozen as a netlist reference only. Next milestone: one reusable physical MAC.

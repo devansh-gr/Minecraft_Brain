@@ -21,3 +21,4 @@ for a, b, c in itertools.product([0, 1], repeat=3):
     ok += good
     print(a, b, c, "-> s", int(s), "cout", int(co), "OK" if good else "WRONG")
 print(f"{ok}/8 correct")
+raise SystemExit(ok != 8)

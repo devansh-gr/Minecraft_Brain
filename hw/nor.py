@@ -64,7 +64,6 @@ def compile(gates, inputs, x0=0, z0=0):
     for s, c in col.items():                       # outputs and inputs never read run to the end
         B.update(column(X(c), start[s], zend + 1))
         probe[s] = (X(c), L0, zend + 1)
-    compile2.level = level
     return B, src, probe
 
 

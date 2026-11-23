@@ -18,3 +18,4 @@ for a, b, ci in itertools.product([0, 1], repeat=3):
     ok += got == want
     print(a, b, ci, "->", int(got[0]), int(got[1]), "OK" if got == want else "WRONG")
 print(f"{ok}/8")
+raise SystemExit(ok != 8)

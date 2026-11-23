@@ -38,3 +38,4 @@ if "--build" in sys.argv:
         ok += r == x * w
         print(f"x={x:2d} w={w:3d} redstone={r:4d} expected={x*w:4d}", "OK" if r == x * w else "WRONG")
     print(f"{ok}/{len(cases)} physical cases correct")
+    raise SystemExit(ok != len(cases))

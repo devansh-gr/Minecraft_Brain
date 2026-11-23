@@ -113,3 +113,4 @@ if __name__ == "__main__":
             bad += 1
             if bad < 4: print("MISMATCH", case, h, o, rh, ro)
     print("python NOR-sim vs reference: %d/3000 mismatches" % bad)
+    raise SystemExit(bad != 0)

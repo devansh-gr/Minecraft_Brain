@@ -12,7 +12,11 @@ def src(k, on):
         cmd(f"setblock {x0+dx} {Y[1]} {z0+dz} glass")
     cmd(f"setblock {x0+dx} {Y[l]} {z0+dz} {'redstone_block' if on else 'air'}")
 print(len(W), "blocks")
+ok = 0
 for a, b in itertools.product([0, 1], repeat=2):
     src("a", a); src("b", b); time.sleep(1.5)
     o = power(x0 + out[0], Y[out[1]], z0 + out[2])
+    ok += (o > 0) == (a != b)
     print(a, b, "->", o, "OK" if (o > 0) == (a != b) else "WRONG")
+print(f"{ok}/4")
+raise SystemExit(ok != 4)
