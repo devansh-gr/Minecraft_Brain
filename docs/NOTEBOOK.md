@@ -305,3 +305,8 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - hw/test_offline.py: server-free regression (compile, compile2, FA netlist simulation, cell block counts). It reproduced the NameError before the fix and passes after.
 - All hardware tests now exit nonzero on any wrong output (test_fa, test_fa_cmp, test_xor, test_mul, net242).
 - The unrolled 9,765-gate 2-4-2 is frozen as a netlist reference only. Next milestone: one reusable physical MAC.
+
+### 17.z Offline redstone simulator (2026-11-22)
+- hw/rsim.py: redstone-tick simulator for the hw block subset (dust with step up/down rules, repeaters with delay and locking, subtract/compare comparators, redstone blocks, stone as conductor, glass as non-conductor).
+- Validated by hw/test_rsim.py against in-game ground truth: xor_cell 4/4, fa_cell 8/8, and the pre-fix fa_cell reproduces the in-game failure exactly (4/8, sum ignores carry-in).
+- Purpose: iterate MAC layouts offline; every design still gets an in-game test before it counts.
