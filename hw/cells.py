@@ -68,7 +68,7 @@ def fa_cell():
     for dx in range(7, 16):
         if dx == 12: put(12, 1, -2, "stone"); put(12, 2, -2, REP % "east")
         else: put(dx, 1, -2, "glass"); put(dx, 2, -2, "redstone_wire")
-    for dz in range(-1, 7):
+    for dz in range(-1, 8):
         if dz == 3: put(7, 1, 3, "stone"); put(7, 2, 3, REP % "north")
         else: put(7, 1, dz, "glass"); put(7, 2, dz, "redstone_wire")
     put(16, 1, 3, "stone"); put(16, 2, 3, "redstone_wire")

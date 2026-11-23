@@ -294,3 +294,8 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - Fresh rebuild on a properly cleared area (the earlier clear exceeded the fill volume limit, so leftover probe blocks sat inside the circuit): the physical multiplier (4-bit x times 5-bit signed lever weight, 337 NOR, 66,238 blocks, 151 x 1,629) gave 12/12 correct products in game, including -240, -156, -1 and 225. The correct value stabilised 22 to 29 s after the inputs changed. The datapack only placed input blocks and read dust power.
 - Comparator XOR cell (`hw/cells.py`): two subtract-mode comparators, inputs on separate layers (floor and glass) so they cross for free. 48 blocks, 4/4 in game, no torches (no burnout). About 6x smaller than the 5-NOR torch XOR.
 - Next: a full adder from two comparator XORs plus a comparator mux carry (cout = p ? c : a, with NOT p = 15 - p from a comparator on a redstone block); a small 2-layer router so cells can be wired without hand-placing; then a time-multiplexed MAC (one multiplier, one accumulator, lever weight banks, hidden-state registers) that runs the 2-4-2 and scales to 8-16-8 by adding memory, not arithmetic.
+
+### 17.x Comparator full adder (2026-11-22)
+- hw/cells.py fa_cell(): two comparator XOR cells plus a comparator carry mux (NP = 15 - p, K = c - NP, G = a - p, cout = K | G).
+- 233 blocks, 23 x 19 footprint, no torches (no burnout). The torch NOR full adder was 9 gates in a crossbar band.
+- In game on the HW server: 8/8 input combinations correct (hw/test_fa_cmp.py). First run was 4/8: one missing dust at the XOR2 b feed, so c never reached the sum path.
