@@ -1,0 +1,12 @@
+forceload corners: [True, True, True, True]
+physical reset                               A=     0 want      0 OK
+one op                                       A=   -63 want    -63 OK
+3 input changes, no GO (state retained)      A=   -63 want    -63 OK
+3 GO pulses, same inputs (3 MACs)            A=   -18 want    -18 OK
+reset asserted mid-computation               A=     0 want      0 OK
+retained after 30 s idle                     A=     0 want      0 OK
+cycle D=14s  wall  17.3 s/op  A=   144 want    144 OK  MSPT P95 max 5.6 P99 max 7.7 ms
+cycle D=10s  wall  12.7 s/op  A=  2977 want    -95 WRONG  MSPT P95 max 23.6 P99 max 24.2 ms
+cycle D= 7s  wall   9.2 s/op  A=   286 want    114 WRONG  MSPT P95 max 18.9 P99 max 30.6 ms
+cycle D= 5s  wall   6.9 s/op  A=  2853 want    -65 WRONG  MSPT P95 max 19.7 P99 max 20.9 ms
+exit=1

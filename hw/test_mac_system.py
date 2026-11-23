@@ -3,14 +3,17 @@ import random, sys, time
 from rsim import Sim
 from mac import system, expected, NB, PX, WB
 Y = {l: -60 + l for l in range(6)}
-L, P = system()
+CSA = "--csa" in sys.argv; sys.argv = [a for a in sys.argv if a != "--csa"]
+L, P = system(CSA)
 S = Sim({(x, Y[l], z): b for (x, l, z), b in L.B.items()})
 def at(p): return (p[0], Y[p[1]], p[2])
 def src(p, on):
     if p[1] == 2: S.set((p[0], Y[1], p[2]), "glass")
     S.set(at(p), "redstone_block" if on else "air")
 def A():
-    v = sum(int(S.out[(1 - PX * j, Y[0], -7)] > 0) << j for j in range(NB)); return v - (1 << NB) * (v >= 1 << (NB - 1))
+    v = sum(int(S.out[(1 - PX * j, Y[0], -7)] > 0) << j for j in range(NB))
+    if CSA: v = (v + sum(int(S.out[(6 - PX * j, Y[0], -7)] > 0) << j for j in range(4, NB))) % (1 << NB)   # readout S+C (CPA still to build)
+    return v - (1 << NB) * (v >= 1 << (NB - 1))
 def pulse():
     src(P["go"], 1); t1 = S.settle(1500); src(P["go"], 0); t2 = S.settle(1500); return t1, t2
 def setin(x, w):

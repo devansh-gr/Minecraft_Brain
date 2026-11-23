@@ -7,7 +7,8 @@ fails = 0
 def check(name, got, want):
     global fails; ok = got == want; fails += not ok
     print(f"{name:44s} A={got:6d} want {want:6d} {'OK' if ok else 'WRONG'}", flush=True)
-print("forceload:", cmd("forceload query")[:90])
+corners = [m.at(p) for p in [(-351, 0, -31), (120, 0, -31), (-351, 0, 200), (120, 0, 200)]]
+print("forceload corners:", [("marked" in cmd(f"forceload query {x} {z}")) for x, _, z in corners])
 m.setin(0, 0); m.reset(); acc = 0; check("physical reset", m.A(), 0)
 m.setin(9, -7); time.sleep(20); m.go(); time.sleep(20); acc = expected(acc, 9, -7); check("one op", m.A(), acc)
 for x, w in [(15, 15), (3, -16), (12, 5)]:                       # inputs change, no clock

@@ -156,17 +156,42 @@ def expected(A, x, w):
 def zrow(j): return 136 + 5 * (NB - 1 - j)
 
 
-def system():
-    """Array + 13-bit pulse-latched accumulator register with physical reset, feedback on L4.
-    Command-set inputs: x pins, w lane tops, GO (clock pulse trigger), RST. A is never written by commands."""
-    L, P = array()
+def lanes(csa):
+    """Feedback lanes: (net, j, x_out, run_x, start points). Rows ordered so lanes with larger x_out run deeper (planar)."""
+    out = []
     for j in range(NB):
-        ox = -PX * j; xl = ox - 1; A = "A%d" % j
         xo = 113 - PX * j
         start = [(29, 0, j * PZ + 31), (xo, 0, j * PZ + 31)] if j < 3 else [(xo, 0, 130)]
-        L.path(A, start + [(xo, 0, zrow(j)), (xl, 0, zrow(j)), (xl, 1, zrow(j) - 1), (xl, 2, zrow(j) - 2),
-                           (xl, 3, zrow(j) - 3), (xl, 4, zrow(j) - 4), (xl, 4, -26), (ox + 1, 4, -26), (ox + 1, 4, -24),
-                           (ox + 1, 3, -23), (ox + 1, 2, -22), (ox + 1, 1, -21), (ox + 1, 0, -20), (ox + 1, 0, -14)], strength=6)
+        out.append(("A%d" % j, j, xo, -1 - PX * j, start))
+    if csa:
+        for j in range(4, NB):
+            xo = 115 - PX * j
+            out.append(("C%d" % j, j, xo, 4 - PX * j, [(xo, 0, 130)]))
+    rank = {ln[0]: i for i, ln in enumerate(sorted(out, key=lambda ln: ln[2]))}
+    return [(n, j, xo, xr, st, 136 + 5 * rank[n]) for n, j, xo, xr, st in out]
+
+
+def system(csa=False):
+    """Array + 13-bit pulse-latched accumulator register with physical reset, feedback on L4.
+    Command-set inputs: x pins, w lane tops, GO (clock pulse trigger), RST. A is never written by commands."""
+    L, P = array(csa)
+    for A, j, xo, xl, start, zr in lanes(csa):
+        ox = -PX * j; xt = ox + (6 if A[0] == "C" else 1)
+        if csa and A[0] == "A" and j < 3:                            # short lane: straight up the east side on L4
+            z0 = j * PZ + 31; xe = 33 + 4 * j; zt = -28 - 2 * j
+            L.path(A, [(29, 0, z0), (xe - 3, 0, z0), (xe - 2, 1, z0), (xe - 1, 2, z0), (xe, 3, z0), (xe, 4, z0 - 1),
+                       (xe, 4, zt), (xt, 4, zt), (xt, 4, -24), (xt, 3, -23), (xt, 2, -22), (xt, 1, -21), (xt, 0, -20), (xt, 0, -14)], strength=6)
+        else:
+          L.path(A, start + [(xo, 0, zr), (xl, 0, zr), (xl, 1, zr - 1), (xl, 2, zr - 2),
+                           (xl, 3, zr - 3), (xl, 4, zr - 4), (xl, 4, -26), (xt, 4, -26), (xt, 4, -24),
+                           (xt, 3, -23), (xt, 2, -22), (xt, 1, -21), (xt, 0, -20), (xt, 0, -14)], strength=6)
+        if A[0] == "C":                                              # carry register bit: reset, latch, jog into the cell c entry
+            L.put(xt, 0, -13, CMP % "north", A)
+            L.rep(ox + 7, 0, -13, "east", "rst"); L.dust(ox + 8, 0, -13, "rst"); L.dust(ox + 8, 1, -12, "rst"); L.put(ox + 8, 1, -11, "stone"); L.dust(ox + 8, 2, -11, "rst")
+            L.rep(xt, 0, -12, "north", A); L.line(A, 0, [(xt, -11), (xt, -8)])
+            L.rep(xt, 0, -7, "north", A); L.rep(ox + 5, 0, -7, "west", "lock"); L.dust(ox + 4, 0, -7, "lock")
+            L.line(A, 0, [(xt, -6), (xt, -1), (ox + 3, -1)])
+            continue
         L.put(ox + 1, 0, -13, CMP % "north", A)                       # d = A - RST
         L.rep(ox, 0, -13, "west", "rst"); L.dust(ox - 1, 0, -13, "rst"); L.dust(ox - 1, 1, -12, "rst"); L.put(ox - 1, 1, -11, "stone"); L.dust(ox - 1, 2, -11, "rst")
         L.rep(ox + 1, 0, -12, "north", A); L.line(A, 0, [(ox + 1, -11), (ox + 1, -8)])
@@ -183,17 +208,29 @@ def system():
         L.rep(ox + 11, 0, -17, "north", "w%d" % min(k, 4)); L.rep(ox + 11, 0, -7, "north", "w%d" % min(k, 4))
     # RST row (L2, z=-10) and LOCK row (L2, z=-4), both fed from the east end, repeaters clear of the taps
     xw = -PX * (NB - 1) - 1
+    xc = -PX * (NB // 2) + 9 if csa else 18          # LOCK feed point: centre of the row (csa) or east end
     for net, z, x_end in (("rst", -10, xw), ("lock", -4, xw + 2)):
         L.line(net, 2, [(18 if net == "lock" else 19, z), (x_end, z)])
         for k in range(NB):
             ox = -PX * k
-            for dx in (7, -9):
-                if ox + dx > x_end: L.rep(ox + dx, 2, z, "east", net)
+            east = net == "lock" and ox > xc               # this column's part of the LOCK row flows east (from the centre feed)
+            for dx in ((1, 15) if east else (7, -9)):
+                if ox + dx > x_end: L.rep(ox + dx, 2, z, "west" if east else "east", net)
     # LOCK = 15 - pulse; pulse = GO - delayed(GO), 4 rt wide
-    L.put(22, 0, -4, "redstone_block"); L.put(21, 0, -4, CMP % "east", "lock")
-    L.dust(20, 0, -4, "lock"); L.dust(19, 1, -4, "lock")
-    L.rep(21, 0, -3, "south", "pulse"); L.dust(21, 0, -2, "pulse"); L.put(21, 0, -1, CMP % "south", "pulse")
-    L.line("go", 0, [(21, 0), (23, 0), (23, -1)]); L.rep(22, 0, -1, "east", "go", delay=4)
-    pins = dict(P); pins["go"] = (24, 0, 0); pins["rst"] = (20, 2, -10)
+    if csa:                                           # generator north of the top region, fed down to the row centre on L4
+        gx, gz = xc, -46
+        L.put(gx + 2, 0, gz, "redstone_block"); L.put(gx + 1, 0, gz, CMP % "east", "lock"); L.dust(gx, 0, gz, "lock")
+        L.rep(gx + 1, 0, gz + 1, "south", "pulse"); L.dust(gx + 1, 0, gz + 2, "pulse"); L.put(gx + 1, 0, gz + 3, CMP % "south", "pulse")
+        L.line("go", 0, [(gx + 1, gz + 4), (gx + 3, gz + 4), (gx + 3, gz + 3)]); L.rep(gx + 2, 0, gz + 3, "east", "go", delay=4)
+        L.path("lock", [(gx, 0, gz), (gx - 1, 0, gz), (gx - 1, 0, gz - 2), (gx + 1, 0, gz - 2), (gx + 2, 1, gz - 2), (gx + 3, 2, gz - 2),
+                        (gx + 4, 3, gz - 2), (gx + 5, 4, gz - 2), (gx + 5, 4, -9), (gx, 4, -9), (gx, 4, -7), (gx, 3, -6), (gx, 2, -5)])
+        go_pin = (gx + 4, 0, gz + 4)
+    else:
+        L.put(22, 0, -4, "redstone_block"); L.put(21, 0, -4, CMP % "east", "lock")
+        L.dust(20, 0, -4, "lock"); L.dust(19, 1, -4, "lock")
+        L.rep(21, 0, -3, "south", "pulse"); L.dust(21, 0, -2, "pulse"); L.put(21, 0, -1, CMP % "south", "pulse")
+        L.line("go", 0, [(21, 0), (23, 0), (23, -1)]); L.rep(22, 0, -1, "east", "go", delay=4)
+        go_pin = (24, 0, 0)
+    pins = dict(P); pins["go"] = go_pin; pins["rst"] = (20, 2, -10)
     pins["w"] = [(11 - k * PX, 0, -21) for k in range(4)] + [(11 - 4 * PX, 2, -31)]
     return L, pins
