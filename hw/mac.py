@@ -217,7 +217,8 @@ def system(csa=False):
             for dx in ((1, 15) if east else (7, -9)):
                 if ox + dx > x_end: L.rep(ox + dx, 2, z, "west" if east else "east", net)
     # LOCK = 15 - pulse; pulse = GO - delayed(GO), 4 rt wide
-    if csa:                                           # generator north of the top region, fed down to the row centre on L4
+    if csa:
+        L.rep(xc + 6, 2, -4, "west", "lock")         # first eastward repeater after the centre feed                                           # generator north of the top region, fed down to the row centre on L4
         gx, gz = xc, -46
         L.put(gx + 2, 0, gz, "redstone_block"); L.put(gx + 1, 0, gz, CMP % "east", "lock"); L.dust(gx, 0, gz, "lock")
         L.rep(gx + 1, 0, gz + 1, "south", "pulse"); L.dust(gx + 1, 0, gz + 2, "pulse"); L.put(gx + 1, 0, gz + 3, CMP % "south", "pulse")
