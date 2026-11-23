@@ -356,3 +356,11 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 ### 17.p Tick-rate benchmark (2026-11-23)
 - hw/test_neuron_tps.py: all harness waits are in game ticks, achieved TPS is measured from game time, and output is read after the strobe pulse is observed. 24/24 correct at 20, 30, 40, 60, 80 and 100 TPS (docs/hw_neuron_tps.md). Achieved TPS equalled the request at every rate.
 - The computation is 2850 game ticks at any rate. At 100 TPS one evaluation takes 28.8 s (vs 144 s at 20 TPS) and the full cycle with drain about 34 s. The weight-change pair (w0 4 -> 8, y 4 -> 9) passed at every rate.
+
+### 17.q Launch footage (2026-11-23)
+- Capture client: Fabric 0.20.1 + ReplayMod 26.3-2.6.28 in isolated `clienttest/`, offline user Camera, spectator.
+- Neuron take (`neuron_demo_vd20.mcpr`, 506 s, HW server view-distance raised 8 to 20 so the whole array is in the replay): w0=4 -> y=4, w0=8 -> y=9 at 20 TPS, 2850 game ticks each, strobe observed (docs/hw_demo_weight_change.txt, 17:04 to 17:09).
+- Brain take (`brain_takes.mcpr`, 206 s): BrainUpright backed up to backups/ first; time frozen at midnight; 60 s idle, then two questions through sign + RUN (docs/video_brain_takes.txt).
+- ReplayMod quirk: kicking or closing during recording leaves `.mcpr.tmp/changed/recording.tmcpr` unsaved. Rebuilt the .mcpr from the stream (parse [int32 time][int32 len][packet] records, duration = last time).
+- Camera paths are code (video/shots.py). Each replay renders as one reel: per-shot centripetal Catmull-Rom splines joined by 1 ms linear hard cuts. video/edit.py trims by the cut table, adds captions (PIL, ffmpeg has no drawtext) and a synthesized drone.
+- Time-lapse and speed-ups are labelled in the captions; the brain shots are captioned as the separate hybrid brain.
