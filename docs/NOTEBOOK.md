@@ -310,3 +310,11 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - hw/rsim.py: redstone-tick simulator for the hw block subset (dust with step up/down rules, repeaters with delay and locking, subtract/compare comparators, redstone blocks, stone as conductor, glass as non-conductor).
 - Validated by hw/test_rsim.py against in-game ground truth: xor_cell 4/4, fa_cell 8/8, and the pre-fix fa_cell reproduces the in-game failure exactly (4/8, sum ignores carry-in).
 - Purpose: iterate MAC layouts offline; every design still gets an in-game test before it counts.
+
+### 17.m Physical multiply-accumulate unit (2026-11-22)
+- hw/mac.py system(): A <- A + x*w in one clock, x 4-bit unsigned, w 5-bit signed, A 13-bit signed (range -4096..4095, covers the 8-16-8 hidden-to-output sums -1920..2880).
+- Array: 4 rows x 13 columns of one tileable cell (b = w AND x via one subtract comparator; full adder p = a^b, s = p^c, cout = max(c - (15 - p), a - p)); partial sums jog one column per row, so w lanes are straight and sign extension is a broadcast of w4.
+- Register: 13 pulse latches (repeater locked by a LOCK row = 15 - pulse; pulse = GO - GO delayed 4 rt), per-bit reset comparator (d = A - RST) before each latch, feedback on a fourth layer (y=-56) over the array.
+- 30,133 blocks, footprint 465 x 227. Commands only set x/w/GO/RST blocks and read latch states.
+- Bug found in game, then modelled: dust power steps down only off a conductor (dust on glass sends power up, not down). rsim now models it; every descending step sits on stone.
+- In game (docs/hw_mac_run1.txt): physical reset to 0, then 10 back-to-back ops incl. negative weights, 11/11 correct. Settle 8.6-13.1 s, write-back 7-12 s, MSPT 0.9-1.4 ms (20 TPS).

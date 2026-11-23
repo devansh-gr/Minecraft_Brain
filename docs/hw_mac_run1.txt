@@ -1,0 +1,15 @@
+No chunks were marked for force loading
+No chunks were marked for force loading
+built 30133 blocks in 8s, footprint 465 x 227
+after physical reset A = 0
+x=15 w=-16 -> A=  -240 want   -240 OK  settle 10.7s  writeback 11.7s  mspt 0.9
+x=15 w= 15 -> A=   -15 want    -15 OK  settle 12.7s  writeback 11.7s  mspt 1.0
+x= 7 w= -9 -> A=   -78 want    -78 OK  settle 9.1s  writeback 9.1s  mspt 1.0
+x= 1 w=  1 -> A=   -77 want    -77 OK  settle 13.1s  writeback 7.1s  mspt 0.9
+x= 0 w= 13 -> A=   -77 want    -77 OK  settle 8.6s  writeback 0.0s  mspt 0.9
+x=10 w= -7 -> A=  -147 want   -147 OK  settle 8.6s  writeback 9.1s  mspt 1.0
+x=12 w=-13 -> A=  -303 want   -303 OK  settle 11.6s  writeback 8.6s  mspt 1.4
+x= 2 w=-10 -> A=  -323 want   -323 OK  settle 9.1s  writeback 8.1s  mspt 0.9
+x=11 w=-13 -> A=  -466 want   -466 OK  settle 11.6s  writeback 11.6s  mspt 1.0
+x= 6 w=-14 -> A=  -550 want   -550 OK  settle 11.6s  writeback 9.1s  mspt 0.9
+11/11 correct
