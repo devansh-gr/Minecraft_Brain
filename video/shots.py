@@ -3,11 +3,11 @@ Each shot = camera keyframes (render ms, eye, look-at) on a catmull-rom spline +
 `python3 shots.py SHOT replay.mcpr` writes that shot's timelines.json into the replay; render it in the Replay Viewer."""
 import json, math, sys, zipfile, shutil
 
-# Neuron replay (neuron_demo_2026_11_23.mcpr) starts 10:07:17.4; events from docs/hw_demo_weight_change.txt
-T0 = 10 * 3600 + 7 * 60 + 17.4
+# Neuron replay (2026_11_23_17_02_57.mcpr, view-distance 20) starts 17:02:57; events from docs/hw_demo_weight_change.txt
+T0 = 17 * 3600 + 2 * 60 + 57
 ev = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60, 1))) - T0) * 1000)
-LOAD4, START4, OUT4 = ev("10:09:18"), ev("10:09:23"), ev("10:11:47")
-LOAD8, START8, OUT8 = ev("10:12:07"), ev("10:12:12"), ev("10:14:36")
+LOAD4, START4, OUT4 = ev("17:04:23"), ev("17:04:28"), ev("17:06:52")
+LOAD8, START8, OUT8 = ev("17:07:12"), ev("17:07:18"), ev("17:09:42")
 
 REG = (982, -60, 1048)          # W0 register row (crossbar row 1)
 LAMPS = (1066, -60, 1269)       # 4 output lamps (x 1060..1072)
