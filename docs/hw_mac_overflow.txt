@@ -1,0 +1,24 @@
+after physical reset A = 0
+x=15 w= 15 -> A=   225 want    225 OK  settle 10.6s  writeback 11.6s  mspt 1.1
+x=15 w= 15 -> A=   450 want    450 OK  settle 0.0s  writeback 10.6s  mspt 0.9
+x=15 w= 15 -> A=   675 want    675 OK  settle 0.0s  writeback 11.7s  mspt 0.9
+x=15 w= 15 -> A=   900 want    900 OK  settle 0.0s  writeback 10.7s  mspt 1.0
+x=15 w= 15 -> A=  1125 want   1125 OK  settle 0.0s  writeback 8.8s  mspt 0.9
+x=15 w= 15 -> A=  1350 want   1350 OK  settle 0.0s  writeback 8.6s  mspt 0.9
+x=15 w= 15 -> A=  1575 want   1575 OK  settle 0.0s  writeback 9.6s  mspt 0.9
+x=15 w= 15 -> A=  1800 want   1800 OK  settle 0.0s  writeback 11.7s  mspt 0.9
+x=15 w= 15 -> A=  2025 want   2025 OK  settle 0.0s  writeback 11.2s  mspt 0.9
+x=15 w= 15 -> A=  2250 want   2250 OK  settle 0.0s  writeback 9.1s  mspt 0.9
+x=15 w= 15 -> A=  2475 want   2475 OK  settle 0.0s  writeback 10.1s  mspt 0.9
+x=15 w= 15 -> A=  2700 want   2700 OK  settle 0.0s  writeback 10.1s  mspt 1.0
+x=15 w= 15 -> A=  2925 want   2925 OK  settle 0.0s  writeback 11.2s  mspt 0.9
+x=15 w= 15 -> A=  3150 want   3150 OK  settle 0.0s  writeback 9.6s  mspt 0.9
+x=15 w= 15 -> A=  3375 want   3375 OK  settle 0.0s  writeback 10.1s  mspt 0.9
+x=15 w= 15 -> A=  3600 want   3600 OK  settle 0.0s  writeback 10.6s  mspt 0.9
+x=15 w= 15 -> A=  3825 want   3825 OK  settle 0.0s  writeback 11.6s  mspt 0.9
+x=15 w= 15 -> A=  4050 want   4050 OK  settle 0.0s  writeback 12.1s  mspt 0.9
+x=15 w= 15 -> A= -3917 want  -3917 OK  settle 0.0s  writeback 11.6s  mspt 0.9
+x=15 w=-16 -> A=  4035 want   4035 OK  settle 11.7s  writeback 10.6s  mspt 0.9
+x=15 w=-16 -> A=  3795 want   3795 OK  settle 0.0s  writeback 10.1s  mspt 0.9
+22/22 correct
+exit=0
