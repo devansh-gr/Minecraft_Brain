@@ -77,17 +77,18 @@ REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain
 
 def reel(names):
     """Concatenate shots; returns (timelines dict, [(name, start_ms, end_ms)] in render time)."""
-    tk, ck, tseg, cseg, cint, cuts, t0 = [], [], [], [], [{"type": "linear", "properties": ["camera:position", "camera:rotation"]}], [], 0
+    tk, ck, tseg, cseg, cint, cuts, t0 = [], [], [], [], [], [], 0
+    lin = {"type": "linear", "properties": ["camera:position", "camera:rotation"]}
     for n in names:
         tl = timelines(SHOTS[n])[""]; tp, cp = tl
-        if tk: t0 += 1; tseg.append(0); cseg.append(0)            # the cut: 1 ms linear jump
+        if tk:                                                    # the cut: 1 ms linear jump, its own interpolator
+            t0 += 1; tseg.append(0); cint.append(dict(lin)); cseg.append(len(cint) - 1)
         cint.append(cp["interpolators"][0]); k = len(cint) - 1
         for f in tp["keyframes"]: tk.append({"time": f["time"] + t0, "properties": f["properties"]})
         for f in cp["keyframes"]: ck.append({"time": f["time"] + t0, "properties": f["properties"]})
         tseg += [0] * (len(tp["keyframes"]) - 1); cseg += [k] * (len(cp["keyframes"]) - 1)
         end = t0 + tp["keyframes"][-1]["time"]; cuts.append((n, t0, end)); t0 = end
-    lin = [{"type": "linear", "properties": ["timestamp"]}]
-    return {"": [{"keyframes": tk, "segments": tseg, "interpolators": lin},
+    return {"": [{"keyframes": tk, "segments": tseg, "interpolators": [{"type": "linear", "properties": ["timestamp"]}]},
                  {"keyframes": ck, "segments": cseg, "interpolators": cint}]}, cuts
 
 
