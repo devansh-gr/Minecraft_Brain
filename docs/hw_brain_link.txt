@@ -1,0 +1,13 @@
+11:56:09 --- link test, tick rate: 20.0
+11:59:12 'what is seven / times eight': paused at clock tick 1, neuron 151 s, x_parietal=9 latch=1001 (9) hwy=9 o=[0, 0, 0, 0, 10, 0, 1, 0] -> OK
+11:59:12   memory: Storage brain:mem has the following contents: {q: "what is seven times eight ", x: [0, 0, 0, 0, 9, 0, 0, 0], les: "", win: "Parietal ", tr: "", o: [0, 0, 0, 0, 10, 0, 1, 0]}
+12:02:26 'what colors are / in a rainbow?': paused at clock tick 1, neuron 151 s, x_parietal=0 latch=0000 (0) hwy=0 o=[0, 0, 0, 0, 0, 0, 10, 0] -> FAIL
+12:02:26   memory: Storage brain:mem has the following contents: {q: "what colors are in a rainbow ", x: [0, 0, 0, 0, 0, 0, 6, 0], les: "", win: "Visual ", tr: "", o: [0, 0, 0, 0, 0, 0, 10, 0]}
+12:02:26 1/2
+# FAIL above: test expected the label "Occipital"; the brain names that region "Visual". Run itself correct; label fixed, rerun below.
+12:02:35 --- link test, tick rate: 20.0
+12:05:40 'what is seven / times eight': paused at clock tick 1, neuron 151 s, x_parietal=9 latch=1001 (9) hwy=9 o=[0, 0, 0, 0, 10, 0, 1, 0] -> OK
+12:05:40   memory: Storage brain:mem has the following contents: {q: "what is seven times eight ", x: [0, 0, 0, 0, 9, 0, 0, 0], les: "", win: "Parietal ", tr: "", o: [0, 0, 0, 0, 10, 0, 1, 0]}
+12:08:54 'what colors are / in a rainbow?': paused at clock tick 1, neuron 151 s, x_parietal=0 latch=0000 (0) hwy=0 o=[0, 0, 0, 0, 0, 0, 10, 0] -> OK
+12:08:54   memory: Storage brain:mem has the following contents: {q: "what colors are in a rainbow ", x: [0, 0, 0, 0, 0, 0, 6, 0], les: "", win: "Visual ", tr: "", o: [0, 0, 0, 0, 0, 0, 10, 0]}
+12:08:54 2/2

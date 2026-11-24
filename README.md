@@ -4,7 +4,7 @@
 
 A brain in vanilla Minecraft 26.3, and a neuron whose math runs entirely through physical redstone.
 
-There are two separate builds in this repo. They are not connected.
+There are two builds in this repo, and they are connected: the redstone neuron is built into the brain world and computes one of the brain's neurons, its math detector, on every question.
 
 ## 1. The physical redstone neuron (new)
 
@@ -22,13 +22,14 @@ The demo: same inputs and bias, x0=5, x1=3, w1=-2, b=3. Store w0=4: the lamps sh
 
 Tests: 10/10 cases correct in game, identical to the redstone simulator, including saturation at 15, negative sums clamped to 0, and zero ([docs/hw_neuron_game.txt](docs/hw_neuron_game.txt)). One evaluation is 2850 game ticks: 144 s at 20 TPS, 28.8 s at `/tick rate 100`, 24/24 correct from 20 to 100 TPS ([benchmark](docs/hw_neuron_tps.md)).
 
-Limits: the next START must wait 400 game ticks while the delay line drains; the harness enforces it, the circuit does not. It is one neuron, not a network.
+Limits: the next START must wait 400 game ticks while the delay line drains; the harness enforces it, the circuit does not. It is one neuron of the brain's 24, not a network.
 
 ## 2. The anatomical brain (hybrid)
 
 An upright brain of 45,551 redstone lamps, shaped from the MNI152 template and the Harvard-Oxford atlas, with both hemispheres, cerebellum and brainstem, inside a lab. Write a question on a sign and press RUN:
 
-- A small network (8 inputs, 16 hidden, 8 outputs) runs in the datapack, not in redstone.
+- A small network (8 inputs, 16 hidden, 8 outputs) runs in the datapack, except for one hidden neuron.
+- That neuron, P:Parietal (the math detector), is the physical redstone neuron from section 1, built at (1000, 1300) in the same world. At the input stage the brain pauses, writes the parietal input into the neuron with w0 = 4 (other operands 0), presses START and waits for it to finish, about 150 s at 20 TPS. It then reads the 4 output latches and uses that value as the unit's drive. The datapack no longer computes that drive. Logged in [docs/hw_brain_link.txt](docs/hw_brain_link.txt).
 - The 8 outputs then compete through physical comparators (winner-take-all). The winner's spike runs down a redstone axon and lights its brain region.
 - TRAIN applies a bounded update to 128 synapses, which persists. Working memory keeps the last 5 runs. Region, synapse and axon lesions with REPAIR; the axon lesion is a physical gate.
 

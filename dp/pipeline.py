@@ -10,7 +10,7 @@ def emit(c):
         return [lamp(2 + 2 * n, LZ, n == active) for n in range(len(STAGES))]
 
     w("stage/input", stage_lamps(1) + sum([bar(f"x{i}", "brain.n", cx[r], L1, -28) for i, r in enumerate(R)], [])
-      + [status("COMPUTING · input layer")])
+      + [status("COMPUTING · input layer"), "function brain:hw/start"])
     for s, t in enumerate(T_H):
         w(f"stage/hidden{s}", stage_lamps(2) + ["function brain:net/hidden_step"]
           + sum([bar(f"h{j}", "brain.n", hx[j], L1, -48) for j in range(J)], [])
@@ -61,7 +61,8 @@ def emit(c):
         '$execute if score #nwin brain.t matches 2.. run data modify entity @e[type=text_display,tag=status,limit=1] text set value "COMPLETE · TIE: $(win)"',
         '$execute unless data storage brain:a {lost:""} run data modify entity @e[type=text_display,tag=status,limit=1] text set value "COMPUTED $(win)· AXON CUT, signal blocked"'])
 
-    clock = ["scoreboard players add #t brain.st 1",
+    clock = ["execute if score #hw brain.st matches 1 run return run function brain:hw/tick",
+             "scoreboard players add #t brain.st 1",
              f"execute if score #t brain.st matches {T_IN} run function brain:stage/input"]
     clock += [f"execute if score #t brain.st matches {t} run function brain:stage/hidden{s}" for s, t in enumerate(T_H)]
     clock += [f"execute if score #t brain.st matches {T_OUT} run function brain:stage/output"]
@@ -84,6 +85,6 @@ def emit(c):
     w("ui/run", ["execute if score #state brain.st matches 1 run return 0", "function brain:p/parse",
                  "function brain:net/encode", "data modify storage brain:a q set from storage brain:p qn",
                  "scoreboard players set #replay brain.st -1", "function brain:begin"])
-    w("ui/reset", ["scoreboard players set #state brain.st 0", "function brain:clear_barrels",
+    w("ui/reset", ["scoreboard players set #state brain.st 0", "scoreboard players set #hw brain.st 0", "function brain:clear_barrels",
                    "function brain:stage/idle"] + [lamp(IND[k], LZ, k == "ready") for k in IND])
 

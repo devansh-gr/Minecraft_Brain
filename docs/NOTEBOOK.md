@@ -377,3 +377,11 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - The question shots are all from one run, so the sign, comparators, axon and lit region show the same answer. The neuron section stays labelled as a separate build.
 - Music: original track synthesized by video/music.py, replacing the drone.
 - Final cut: release/redstone_cortex.mp4, 64.9 s, 2560 x 1440, 60 FPS, 251 MB.
+
+### 17.s Neuron linked into the brain (2026-11-24)
+- Feedback: a neuron that does not affect the brain reads as pointless. Requested: connect them so the neuron does a real job.
+- Choice: hidden unit P:Parietal. Its drive is floor((W x_parietal + b) / 4) with W = 4, b = 0, which is the physical neuron's function with x0 = x_parietal, w0 = 4 and x1 = w1 = b = 0. The output is clamped at 15 either way, so the swap does not change any brain output; it moves where the number is computed.
+- Build: `hw/build_in_brain.py --build` placed the 49,164-block neuron at (1000, 1300) in BrainUpright (forceloaded, 13 s over RCON). World backup first: `backups/BrainUpright-preneuron-20261124.tgz`. In-place self-test at 20 TPS: 5/5, (9,0,4,0,0) -> 9, (0,..) -> 0, (15,..) -> 15, (5,3,4,-2,3) -> 4, (5,3,8,-2,3) -> 9, 143 s each.
+- Datapack (`dp/hwneuron.py`): `stage/input` calls `hw/start`, which writes the pins and sets #hw; while #hw = 1 the clock does not advance and runs `hw/tick` instead (WE rows at tick 6 to 56, pins cleared at 96, START pulse 100 to 120, done once the RUN latch has been clear for 60 ticks). `hw/read` loads the 4 output latches into hwy; `net/hidden_step` uses hwy as unit 4's drive. The generated datapack differs from the previous one only in clock, stage/input, ui/reset, hidden_step (5 lines replaced by 1) and the new hw/ functions. Timeout 6000 ticks reads 0 and says so in chat.
+- Test (`test_hw_link.py`, 20 TPS, log docs/hw_brain_link.txt): "what is seven times eight" paused at clock tick 1, neuron 151 s, x_parietal = 9, latch 1001 = 9, hwy = 9, o_parietal = 10, winner Parietal. "what colors are in a rainbow?" x_parietal = 0, latch 0000, winner Visual. The first rainbow line in the log is marked FAIL because the test expected the label "Occipital"; the brain calls it "Visual".
+- Cost: every question now takes about 150 s longer at 20 TPS.
