@@ -31,12 +31,12 @@ SHOTS = {
     "lapse4": dict(cam=[(0, (1090, -25, 1150), (980, -61, 1240)), (5000, (1100, -30, 1210), (1000, -61, 1260))],
                    time=[(0, START4 + 2000), (5000, OUT4 - 4000)]),
     # output lamps update to 4 (0100)
-    "out4": dict(cam=[(0, (1066, -53, 1257), LAMPS), (4000, (1066, -55, 1260), LAMPS)],
-                 time=[(0, OUT4 - 4000), (4000, OUT4 + 2000)]),
+    "out4": dict(cam=[(0, (1066, -55, 1260), LAMPS), (6000, (1066, -56, 1263), LAMPS)],
+                 time=[(0, OUT4 - 4000), (6000, OUT4 + 5000)]),
     "reg8": dict(cam=[(0, (998, -50, 1068), REG), (5000, (990, -54, 1060), REG)],
                  time=[(0, LOAD8 - 1000), (5000, LOAD8 + 6000)]),
-    "out8": dict(cam=[(0, (1066, -53, 1257), LAMPS), (4000, (1066, -55, 1260), LAMPS)],
-                 time=[(0, OUT8 - 4000), (4000, OUT8 + 2000)]),
+    "out8": dict(cam=[(0, (1066, -55, 1260), LAMPS), (6000, (1066, -56, 1263), LAMPS)],
+                 time=[(0, OUT8 - 4000), (6000, OUT8 + 5000)]),
     # --- brain world (the separate hybrid 8-16-8 brain) ---
     # hook: extreme close-up on the cortex, dramatic pull back
     "hook": dict(cam=[(0, (0, 18, 50), (0, 18, 75)), (2500, (5, 10, 15), BRAIN), (5000, (10, 2, -20), BRAIN)],
@@ -46,10 +46,10 @@ SHOTS = {
                    time=[(0, IDLE + 8000), (6000, IDLE + 14000)]),
     # real activation after RUN: slow push toward parietal, real time
     "activate": dict(cam=[(0, (-8, 6, 20), PARIETAL), (8000, (-2, 14, 42), PARIETAL)],
-                     time=[(0, RUN1 + 7000), (8000, RUN1 + 15000)]),
-    # final hero: slow rising pullback, whole brain in frame
-    "hero": dict(cam=[(0, (16, 20, -25), BRAIN), (6000, (16, 32, -55), BRAIN)],
-                 time=[(0, IDLE + 20000), (6000, IDLE + 26000)]),
+                     time=[(0, RUN1 + 18000), (8000, RUN1 + 26000)]),      # lamps ring on from RUN + 21 s (measured)
+    # final hero: rising pullback while the winning region is still lit (lit until RUN + 43 s)
+    "hero": dict(cam=[(0, (16, 4, 25), BRAIN), (6000, (16, 14, -5), BRAIN)],
+                 time=[(0, RUN1 + 27000), (6000, RUN1 + 33000)]),
 }
 
 
@@ -72,7 +72,7 @@ def timelines(s):
 
 
 # One render per replay: shots in replay-time order, joined by 1 ms hard cuts (linear segment), each shot its own spline.
-REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "hero", "activate"]}
+REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "activate", "hero"]}
 
 
 def reel(names):
