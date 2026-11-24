@@ -21,7 +21,7 @@ All camera paths are source code in [`video/shots.py`](../video/shots.py): keyfr
 | reveal | brain | three-quarter orbit of the lit hemisphere | 1x |
 | flyover | neuron | low pass over the circuit rising to the full 460 x 501 array, during the w0=8 run | 2x, labelled |
 | reg4, reg8 | neuron | the W0 register row as the weight is written | 1.4x |
-| lapse4 | neuron | the computation | about 27x, labelled time-lapse |
+| lapse4 | neuron | the computation | 27.6x, labelled time-lapse |
 | out4, out8 | neuron | the 4 output lamps latch 4 (0100) and 9 (1001) | 1.5x |
 | activate | brain | the winning region lights after RUN | 1x |
 | hero | brain | rising pullback, whole brain | 1x |

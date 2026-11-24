@@ -26,7 +26,7 @@ Limits: the next START must wait 400 game ticks while the delay line drains; the
 
 ## 2. The anatomical brain (hybrid)
 
-An upright brain of about 47,600 redstone lamps, shaped from the MNI152 template and the Harvard-Oxford atlas, with both hemispheres, cerebellum and brainstem, inside a lab. Write a question on a sign and press RUN:
+An upright brain of 45,551 redstone lamps, shaped from the MNI152 template and the Harvard-Oxford atlas, with both hemispheres, cerebellum and brainstem, inside a lab. Write a question on a sign and press RUN:
 
 - A small network (8 inputs, 16 hidden, 8 outputs) runs in the datapack, not in redstone.
 - The 8 outputs then compete through physical comparators (winner-take-all). The winner's spike runs down a redstone axon and lights its brain region.

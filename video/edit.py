@@ -11,10 +11,10 @@ FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 CAP_AT = {"out4": 2.0, "out8": 1.5}
 EDL = [
     ("brain", "hook", 0.0, 5.0, "I built a brain in Minecraft.", ""),
-    ("brain", "reveal", 0.0, 6.0, "", "Upright brain from an MRI atlas. About 47,600 redstone lamps."),
+    ("brain", "reveal", 0.0, 6.0, "", "Upright brain from an MRI atlas. 45,551 redstone lamps."),
     ("neuron", "flyover", 1.0, 8.0, "Then I built a neuron from pure redstone.", "Separate build. 49,164 blocks. 2x speed"),
     ("neuron", "reg4", 2.0, 3.0, "Store weight w0 = 4", "x0 = 5, x1 = 3, w1 = -2, bias = 3"),
-    ("neuron", "lapse4", 1.0, 3.0, "The redstone multiplies and adds", "Time-lapse, about 27x. 2850 game ticks"),
+    ("neuron", "lapse4", 1.0, 3.0, "The redstone multiplies and adds", "Time-lapse, about 28x. 2850 game ticks"),
     ("neuron", "out4", 1.0, 4.5, "Output: 4", "The 4 output lamps read 0100"),
     ("neuron", "reg8", 2.0, 3.0, "Change one weight: w0 = 8", "Same inputs and bias"),
     ("neuron", "out8", 1.0, 4.5, "Output: 9", "Lamps read 1001.  floor((8*5 - 2*3 + 3) / 4) = 9"),

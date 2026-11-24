@@ -27,7 +27,7 @@ SHOTS = {
     # stored weight w0 = 4 written into the register latches
     "reg4": dict(cam=[(0, (998, -50, 1068), REG), (5000, (990, -54, 1060), REG)],
                  time=[(0, LOAD4 - 1000), (5000, LOAD4 + 6000)]),
-    # computation time-lapse (about 30x), wide
+    # computation time-lapse (27.6x), wide
     "lapse4": dict(cam=[(0, (1090, -25, 1150), (980, -61, 1240)), (5000, (1100, -30, 1210), (1000, -61, 1260))],
                    time=[(0, START4 + 2000), (5000, OUT4 - 4000)]),
     # output lamps update to 4 (0100)
