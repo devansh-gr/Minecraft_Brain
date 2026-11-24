@@ -364,3 +364,7 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - ReplayMod quirk: kicking or closing during recording leaves `.mcpr.tmp/changed/recording.tmcpr` unsaved. Rebuilt the .mcpr from the stream (parse [int32 time][int32 len][packet] records, duration = last time).
 - Camera paths are code (video/shots.py). Each replay renders as one reel: per-shot centripetal Catmull-Rom splines joined by 1 ms linear hard cuts. video/edit.py trims by the cut table, adds captions (PIL, ffmpeg has no drawtext) and a synthesized drone.
 - Time-lapse and speed-ups are labelled in the captions; the brain shots are captioned as the separate hybrid brain.
+- Renders (2026-11-23 evening): one ReplayMod render per reel took about 1 to 1.5 min (not 30 as estimated). ReplayMod needs each interpolator to cover one contiguous run of segments ("Segments are not continuous" crash otherwise), so every cut has its own linear interpolator.
+- Measured live: the brain's winning region starts lighting 21 s after RUN, is full by 22.5 s, stays lit until reset at about 43 s. The first activation shot (RUN + 7 to 15 s) missed it and was retimed.
+- Output lamps change 2.9 s (w0=4) and 2.4 s (w0=8) into their shots; the "Output" captions start only after that, so no caption ever claims a value the lamps do not yet show.
+- Final cut: release/redstone_cortex.mp4, 47.9 s, 2560 x 1440, 60 FPS.

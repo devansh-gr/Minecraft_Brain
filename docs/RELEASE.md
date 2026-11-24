@@ -1,6 +1,28 @@
-# Release: Redstone Cortex launch (draft)
+# Release: Redstone Cortex launch
 
-Demonstrated version: the commit that adds the final video (SHA filled in at release).
+Demonstrated version: commit `023589c` (neuron hardware unchanged since the 10/10 run; this commit adds the final shot timings and stills).
+
+## Files
+
+- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 47.9 s, 2560 x 1440, 60 FPS, H.264 + AAC, 165 MB, sha256 `7e5ed4861e253dc0...`. Fits X (under 512 MB and 140 s).
+- Cover: `docs/img/launch/cover.jpg`. Screenshots: `docs/img/launch/` (brain close, reveal, parietal lit, neuron overview, weight register, output 9).
+- Camera paths: `video/shots.py`. Edit: `video/edit.py`. Replays: `clienttest/replay_recordings/neuron_demo_vd20.mcpr`, `brain_takes.mcpr` (local).
+- Render settings: ReplayMod default rendering, MP4 custom bitrate 40 Mbps, 2560 x 1440, 60 FPS. Final encode: x264 CRF 17, AAC 192k.
+- Audio: a drone synthesized in `video/edit.py` (sine tones), no third-party music.
+
+## What the video shows
+
+| Time | Content | Speed |
+|---|---|---|
+| 0 to 11 s | Upright brain, close-up and reveal | 1x |
+| 11 to 19 s | Neuron flyover during the w0=8 run | 2x |
+| 19 to 22 s | w0 = 4 written into the register latches | 1.4x |
+| 22 to 25 s | Computation | time-lapse, about 27x |
+| 25 to 30 s | Lamps latch 0100 = 4; caption appears only after they change | 1.5x |
+| 30 to 33 s | w0 = 8 written | 1.4x |
+| 33 to 37 s | Lamps latch 1001 = 9 | 1.5x |
+| 37 to 43 s | Hybrid brain: parietal lights after "what is seven times eight" | 1x |
+| 43 to 48 s | Hero shot, region still lit | 1x |
 
 ## X post
 

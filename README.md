@@ -1,5 +1,7 @@
 # Redstone Cortex
 
+![Redstone Cortex](docs/img/launch/cover.jpg)
+
 A brain in vanilla Minecraft 26.3, and a neuron whose math runs entirely through physical redstone.
 
 There are two separate builds in this repo. They are not connected.
@@ -16,7 +18,7 @@ with every step in redstone. The two 4-bit inputs, two signed 5-bit weights and 
 
 Commands only set the input and weight pins, press START, and read block states afterwards. They never compute, select or set the result.
 
-The demo: same inputs and bias, x0=5, x1=3, w1=-2, b=3. Store w0=4: the lamps show 4. Store w0=8: the lamps show 9. Filmed and logged in [docs/hw_demo_weight_change.txt](docs/hw_demo_weight_change.txt).
+The demo: same inputs and bias, x0=5, x1=3, w1=-2, b=3. Store w0=4: the lamps show 4. Store w0=8: the lamps show 9. Filmed and logged in [docs/hw_demo_weight_change.txt](docs/hw_demo_weight_change.txt); the launch video and stills are described in [docs/RELEASE.md](docs/RELEASE.md).
 
 Tests: 10/10 cases correct in game, identical to the redstone simulator, including saturation at 15, negative sums clamped to 0, and zero ([docs/hw_neuron_game.txt](docs/hw_neuron_game.txt)). One evaluation is 2850 game ticks: 143 s at 20 TPS, 28.8 s at `/tick rate 100`, 24/24 correct from 20 to 100 TPS ([benchmark](docs/hw_neuron_tps.md)).
 
