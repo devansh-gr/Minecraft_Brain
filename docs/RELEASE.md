@@ -30,7 +30,7 @@ Demonstrated version: commit `023589c` (neuron hardware unchanged since the 10/1
 | 55.5 to 60 s | Lamps latch 1001 = 9 | 1.5x |
 | 60 to 65 s | Hero shot, region still lit | 1x |
 
-The question shots are one continuous run (take 1 in [video_demo_takes.txt](video_demo_takes.txt)): the sign, the RUN press, the comparators, the axon and the lit region are the same answer. The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`.
+The question shots are one continuous run (the first successful take, 05:25:35 in [video_demo_takes.txt](video_demo_takes.txt)): the sign, the RUN press, the comparators, the axon and the lit region are the same answer. The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`.
 
 ## X post
 
@@ -45,7 +45,7 @@ Code and test logs: github.com/devansh-gr/Minecraft_Brain
 ## Evidence
 
 - Neuron, in game: 10/10 cases, identical to the redstone simulator (docs/hw_neuron_game.txt, docs/hw_neuron_sim.txt).
-- Tick rate: 24/24 correct from 20 to 100 TPS; 143 s per evaluation at 20 TPS, 28.8 s at 100 (docs/hw_neuron_tps.md).
+- Tick rate: 24/24 correct from 20 to 100 TPS; 144 s per evaluation at 20 TPS, 28.8 s at 100 (docs/hw_neuron_tps.md).
 - Weight-change demo as filmed: docs/hw_demo_weight_change.txt.
 - Brain: docs/TEST_REPORT_UPRIGHT.md.
 

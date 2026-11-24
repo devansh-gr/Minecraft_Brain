@@ -16,7 +16,7 @@ IDLE, RUN1 = evb("17:18:00"), evb("17:18:54")   # idle hold, then "what is seven
 BRAIN = (16, -5, 95)            # centre of the lit (-z facing) hemisphere
 PARIETAL = (0, 17, 80)
 
-# Demo replay (demo_takes.mcpr) starts 05:20:40; events from docs/video_demo_takes.txt (take 1: seven times eight)
+# Demo replay (demo_takes.mcpr) starts 05:20:40; events from docs/video_demo_takes.txt (first successful take, 05:25:35: seven times eight)
 T0D = 5 * 3600 + 20 * 60 + 40
 evd = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60, 1))) - T0D) * 1000)
 WALK, EDIT, SIGNED, RUN = evd("05:25:35"), evd("05:25:40"), evd("05:25:49"), evd("05:25:51")
