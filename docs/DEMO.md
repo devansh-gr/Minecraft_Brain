@@ -7,17 +7,20 @@ Every frame in the video is real Minecraft footage recorded with ReplayMod, from
 | Replay | World | What happened (log) |
 |---|---|---|
 | `neuron_demo_vd20.mcpr` (506 s) | `server_hw/` HW, neuron at (1000, 1300) | w0=4 -> y=4, then w0=8 -> y=9, same x0=5, x1=3, w1=-2, b=3, at 20 TPS ([log](hw_demo_weight_change.txt), takes from 17:04) |
+| `demo_takes.mcpr` (487 s) | `server/` BrainUpright | A survival player walks to the console, types "what is seven times eight" on the sign and presses RUN; then "can you hear the music?" as a backup take ([log](video_demo_takes.txt)). Keyboard input sent to the client by `video/film_demo.py` |
 | `brain_takes.mcpr` (206 s) | `server/` BrainUpright | 60 s idle at frozen midnight, then "what is seven times eight" and "can you hear the music?" through the normal sign + RUN path ([log](video_brain_takes.txt)) |
 
-Recording client: Fabric 0.20.1 + ReplayMod 26.3-2.6.28 + Fabric API 0.167.0+26.3, in the isolated `clienttest/` folder (gitignored), user `Camera` in spectator. Server view distance 20 on the HW server so the whole 460 x 501 neuron is in the replay.
+Recording client: Fabric 0.20.1 + ReplayMod 26.3-2.6.28 + Fabric API 0.167.0+26.3, in the isolated `clienttest/` folder (gitignored), user `Camera` in spectator. Server view distance 20 on the HW server so the whole 460 x 501 neuron is in the replay, and 16 on the brain server for the demo takes (restored to 8 after).
 
 ## Shots
 
-All camera paths are source code in [`video/shots.py`](../video/shots.py): keyframes of (render time, eye, look-at) on a centripetal Catmull-Rom spline, plus a linear replay-time path. `python3 video/shots.py neuron|brain REPLAY.mcpr` writes one reel into the replay; each reel is one render with 1 ms hard cuts between shots.
+All camera paths are source code in [`video/shots.py`](../video/shots.py): keyframes of (render time, eye, look-at) on a centripetal Catmull-Rom spline, plus a linear replay-time path. `python3 video/shots.py neuron|brain|demo REPLAY.mcpr` writes one reel into the replay; each reel is one render with 1 ms hard cuts between shots.
 
 | Shot | Replay | Content | Speed |
 |---|---|---|---|
 | hook | brain | close on the cortex, pull back | 1x |
+| approach, write, press | demo | the player walks to the console, the question appears on the sign, RUN lights | 1x, 1x, 0.67x |
+| proc, decide, axon, lands | demo | input lamps, the 8 comparator rails (one stays lit), the winner's axon lane, the parietal region lighting, all from the same run | 1x |
 | reveal | brain | three-quarter orbit of the lit hemisphere | 1x |
 | flyover | neuron | low pass over the circuit rising to the full 460 x 501 array, during the w0=8 run | 2x, labelled |
 | reg4, reg8 | neuron | the W0 register row as the weight is written | 1.4x |
@@ -28,7 +31,7 @@ All camera paths are source code in [`video/shots.py`](../video/shots.py): keyfr
 
 The brain shots show the separate hybrid brain. Captions say so; the neuron does not drive it.
 
-Render: 2560 x 1440, 60 FPS, H.264, from the ReplayMod render dialog. Final edit, captions and audio: ffmpeg (see `video/`).
+Render: 2560 x 1440, 60 FPS, H.264, from the ReplayMod render dialog. Final edit and captions: ffmpeg via `video/edit.py`. Music: original, synthesized by `video/music.py`.
 
 ## Run the weight-change demo yourself
 

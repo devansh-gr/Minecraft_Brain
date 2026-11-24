@@ -16,7 +16,14 @@ IDLE, RUN1 = evb("17:18:00"), evb("17:18:54")   # idle hold, then "what is seven
 BRAIN = (16, -5, 95)            # centre of the lit (-z facing) hemisphere
 PARIETAL = (0, 17, 80)
 
-REG = (982, -60, 1048)          # W0 register row (crossbar row 1)
+# Demo replay (demo_takes.mcpr) starts 05:20:40; events from docs/video_demo_takes.txt (take 1: seven times eight)
+T0D = 5 * 3600 + 20 * 60 + 40
+evd = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60, 1))) - T0D) * 1000)
+WALK, EDIT, SIGNED, RUN = evd("05:25:35"), evd("05:25:40"), evd("05:25:49"), evd("05:25:51")
+SIGN = (2, -58.6, -74)
+BUTTON = (4, -59, -74)
+
+REG = (982, -60, 1048)         # W0 register row (crossbar row 1)
 LAMPS = (1066, -60, 1269)       # 4 output lamps (x 1060..1072)
 
 SHOTS = {
@@ -50,6 +57,22 @@ SHOTS = {
     # final hero: rising pullback while the winning region is still lit (lit until RUN + 43 s)
     "hero": dict(cam=[(0, (16, 4, 25), BRAIN), (6000, (16, 14, -5), BRAIN)],
                  time=[(0, RUN1 + 27000), (6000, RUN1 + 33000)]),
+    # --- demo replay: a player asks the brain a question ---
+    "approach": dict(cam=[(0, (9, -57.8, -80), (-5, -59, -76.5)), (4000, (8, -57.8, -79.5), (2, -59, -75))],
+                     time=[(0, WALK - 500), (4000, WALK + 3500)]),
+    "write": dict(cam=[(0, (3.7, -57.6, -77.9), (2.0, -58.5, -74)), (2500, (2.8, -57.7, -77.0), (2.0, -58.5, -74)),
+                       (5000, (1.9, -58.1, -75.8), (2.0, -58.5, -74))],
+                  time=[(0, SIGNED - 4500), (5000, SIGNED + 500)]),
+    "press": dict(cam=[(0, (6.4, -58.1, -76.4), (4.5, -59, -74)), (3000, (6.1, -58.3, -76.0), (4.5, -59, -74))],
+                  time=[(0, SIGNED + 500), (3000, RUN + 500)]),
+    "proc": dict(cam=[(0, (16, -40, -70), (16, -57.7, -60.6)), (3000, (16, -42, -68), (16, -57.7, -60.6))],
+                 time=[(0, RUN + 500), (3000, RUN + 3500)]),
+    "decide": dict(cam=[(0, (16, -44, -28), (16, -56.7, -20.1)), (6000, (16, -48, -25), (16, -58, -18))],
+                   time=[(0, RUN + 3500), (6000, RUN + 9500)]),
+    "axon": dict(cam=[(0, (26, -56, -4), (8, -59.5, 40)), (6000, (24, -55, 12), (6, -59.5, 50))],
+                 time=[(0, RUN + 14000), (6000, RUN + 20000)]),
+    "lands": dict(cam=[(0, (-8, 6, 20), PARIETAL), (8000, (-2, 14, 42), PARIETAL)],
+                  time=[(0, RUN + 20500), (8000, RUN + 28500)]),
 }
 
 
@@ -72,7 +95,8 @@ def timelines(s):
 
 
 # One render per replay: shots in replay-time order, joined by 1 ms hard cuts (linear segment), each shot its own spline.
-REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "activate", "hero"]}
+REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "activate", "hero"],
+         "demo": ["approach", "write", "press", "proc", "decide", "axon", "lands"]}
 
 
 def reel(names):

@@ -368,3 +368,12 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - Measured live: the brain's winning region starts lighting 21 s after RUN, is full by 22.5 s, stays lit until reset at about 43 s. The first activation shot (RUN + 7 to 15 s) missed it and was retimed.
 - Output lamps change 2.9 s (w0=4) and 2.4 s (w0=8) into their shots; the "Output" captions start only after that, so no caption ever claims a value the lamps do not yet show.
 - Final cut: release/redstone_cortex.mp4, 47.9 s, 2560 x 1440, 60 FPS.
+
+### 17.r Question demo footage (2026-11-24)
+- Feedback on the 47.9 s cut: captions too technical, and no demo of someone asking the brain a question. Recut with a user demo first and plain-English captions.
+- Filmed on BrainUpright with ReplayMod (demo_takes.mcpr, video_demo_takes.txt): a survival player walks to the console, types "what is seven times eight" on the sign and presses RUN; second take "can you hear the music?". Input sent to the client as key events by video/film_demo.py.
+- Failures on the way: `rotate ... facing` aims from the feet, so the player looked over the sign (fixed by computing yaw/pitch from eye height); the capture client binds "use" to R, so synthetic right-clicks did nothing (first take empty, marked in the log).
+- Stage timing seen in the replay (1x): input lamps at RUN + 1.5 s, one of the 8 comparator rails held lit by RUN + 8 s, the winner's axon lane lights at about RUN + 17 s, the parietal region at RUN + 21 s.
+- The question shots are all from one run, so the sign, comparators, axon and lit region show the same answer. The neuron section stays labelled as a separate build.
+- Music: original track synthesized by video/music.py, replacing the drone.
+- Final cut: release/redstone_cortex.mp4, 64.9 s, 2560 x 1440, 60 FPS, 251 MB.
