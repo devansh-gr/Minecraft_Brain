@@ -6,7 +6,7 @@ from .common import *
 def emit(c):
     w, R, N, J, ri, cx, hx, hname, W, V, feeds, feed_y, col, lc, kw, lever_region, lever_syn, lever_axon, lever, lamp, status, bar = (c.w, c.R, c.N, c.J, c.ri, c.cx, c.hx, c.hname, c.W, c.V, c.feeds, c.feed_y, c.col, c.lc, c.kw, c.lever_region, c.lever_syn, c.lever_axon, c.lever, c.lamp, c.status, c.bar)
     # ---------------- tick: console polling (rising edge) + clock
-    tick = ["execute if score #state brain.st matches 1..2 run function brain:clock"]
+    tick = ["execute if score #state brain.st matches 1..2 run function brain:clock", "function brain:race/tick"]
     controls = [(f"{x} {L1} {CZ}", f"ui/{n}") for n, x in BTN.items()]
     controls += [(f"{x} {L1} {CZ}", f"ui/replay{s}") for s, x in enumerate(REPLAY_X)]
     controls += [(f"{cx[R[t]]} {L1} {TZ}", f"ui/target{t}") for t in range(N)]

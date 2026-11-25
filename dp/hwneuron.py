@@ -1,5 +1,5 @@
-"""The physical redstone neuron (hw/, built at (1000, 1300) by hw/build_in_brain.py) is hidden unit P:Parietal.
-At the input stage the clock pauses: the parietal input is written to the neuron's input pins with w0 = 4 (all other
+"""The physical redstone neuron (hw/, built at (1000, 1300) by hw/build_in_brain.py) is hidden unit P:Prefrontal (judgment) since 2026-11-25; it was P:Parietal before.
+At the input stage the clock pauses: the prefrontal input is written to the neuron's input pins with w0 = 4 (all other
 operands 0), START is pulsed, and when its RUN latch has been clear for 60 ticks its 4 output latches are read into
 hwy. The hidden step uses hwy as that unit's drive, floor((4 x + 0) / 4), instead of computing it."""
 import os, sys
@@ -29,7 +29,7 @@ def emit(c):
                   "scoreboard players operation #b brain.t /= #2 brain.t"]
     start += [pin(P["reg"][f"W0_{i}"], 1) for i in range(5) if W0 >> i & 1]
     start += ["scoreboard players set #hw brain.st 1", "scoreboard players set #hwt brain.st 0",
-              "scoreboard players set #hwe brain.st 0", status("COMPUTING · redstone neuron (math detector)")]
+              "scoreboard players set #hwe brain.st 0", status("COMPUTING · redstone neuron (judgment detector)")]
     w("hw/start", start)
 
     tick = ["scoreboard players add #hwt brain.st 1",

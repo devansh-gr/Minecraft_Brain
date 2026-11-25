@@ -18,14 +18,17 @@ def face(x, y, z):                    # aim from the eyes (rotate ... facing aim
 def inp(*a): subprocess.run([INP, *map(str, a)], check=True)
 
 cmd("weather clear 1000000"); cmd("time set midnight"); cmd("team add cam"); cmd("team modify cam nametagVisibility never"); cmd("team join cam Camera")
-for q in ([["what is seven", "times eight"]] if len(sys.argv) < 2 else [sys.argv[1:3]]):
+for q in ([["what is seven", "times eight"]] if len(sys.argv) < 2 else [sys.argv[1:5]]):
     while state() != 0: time.sleep(1)
     cmd('data merge block 2 -59 -74 {front_text:{messages:["","","",""]}}')
     cmd("gamemode survival Camera"); cmd("tp Camera -7.5 -60 -76.5 -90 10"); time.sleep(4)
     say("WALK"); inp("key", 13, "down"); time.sleep(2.3); inp("key", 13, "up"); time.sleep(0.8)
     face(2.5, -58.45, -73.5); time.sleep(1.0)
     say("EDIT SIGN"); inp("key", 15); time.sleep(1.0)
-    inp("type", q[0]); inp("key", 36); inp("type", q[1]); time.sleep(0.6); inp("key", 53); time.sleep(1.2)
+    for k, line in enumerate(q):
+        if k: inp("key", 36)
+        inp("type", line)
+    time.sleep(0.6); inp("key", 53); time.sleep(1.2)
     say("SIGN " + cmd("data get block 2 -59 -74 front_text.messages"))
     face(4.5, -58.97, -73.5); time.sleep(1.0)
     inp("key", 15); say("RUN pressed")

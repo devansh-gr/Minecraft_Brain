@@ -15,6 +15,7 @@ evb = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60,
 IDLE, RUN1 = evb("17:18:00"), evb("17:18:54")   # idle hold, then "what is seven times eight" (parietal)
 BRAIN = (16, -5, 95)            # centre of the lit (-z facing) hemisphere
 PARIETAL = (0, 17, 80)
+PREFRONTAL = (36, 10, 82)        # front of the lit hemisphere (judgment question, 2026-11-25)
 
 # Demo replay (demo_takes.mcpr) starts 05:20:40; events from docs/video_demo_takes.txt (first successful take, 05:25:35: seven times eight)
 T0D = 5 * 3600 + 20 * 60 + 40
@@ -92,6 +93,7 @@ for n, base, t in [("l_approach", "approach", [(0, LWALK - 500), (4000, LWALK + 
                    ("l_axon", "axon", [(0, LDONE + 14000), (6000, LDONE + 20000)]),
                    ("l_lands", "lands", [(0, LDONE + 20500), (8000, LDONE + 28500)])]:
     SHOTS[n] = dict(cam=SHOTS[base]["cam"], time=t)
+SHOTS["l_lands"]["cam"] = [(0, (28, 6, 20), PREFRONTAL), (8000, (32, 14, 42), PREFRONTAL)]
 
 
 def rot(eye, at):

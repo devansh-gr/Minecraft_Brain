@@ -11,7 +11,7 @@ PAIRS = [("prefrontal", "temporal"), ("broca", "temporal"), ("motor", "cerebellu
          ("somato", "parietal"), ("parietal", "occipital"), ("temporal", "occipital"), ("prefrontal", "parietal")]
 W_P, W_A, V_P, V_A = 4, 2, 4, 1          # baseline weights
 V_MIN, V_MAX = -8, 12                    # plasticity bounds
-HW_UNIT = "parietal"                     # hidden unit P_k computed by the redstone neuron
+HW_UNIT = "prefrontal"                     # hidden unit P_k computed by the redstone neuron
 H_DIV, O_DIV = 4, 4                      # integer scaling of weighted sums
 STEPS = 4                                # leaky integration steps
 

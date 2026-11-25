@@ -74,7 +74,7 @@ def emit(c):
     w("clock", clock)
 
     # start a computation: from the sign (run), from memory (replay) or from a vector (inject)
-    begin = ["function brain:clear_barrels", "scoreboard players set #state brain.st 1",
+    begin = ["function brain:race/init", "function brain:clear_barrels", "scoreboard players set #state brain.st 1",
              "scoreboard players set #t brain.st 0", "scoreboard players set #inj brain.st 0"]
     begin += [lamp(IND[k], LZ, k == "computing") for k in IND]
     begin += [f"scoreboard players set u{j} brain.n 0" for j in range(J)]

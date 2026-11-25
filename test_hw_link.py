@@ -1,9 +1,10 @@
 """Brain + physical neuron link (server/ BrainUpright, RCON 25599). Asks questions through the sign + RUN path and
-checks that the run waits for the redstone neuron, that its output latch equals floor((4 x_parietal + 0) / 4), and
+checks that the run waits for the redstone neuron, that its output latch equals floor((4 x_prefrontal + 0) / 4), and
 which region wins. Logs to docs/hw_brain_link.txt."""
 import json, time
 from rcon import cmd
 from test import score, CZ
+UNIT = 0                                                              # hidden unit on the neuron: P:Prefrontal (index 0)
 
 YS = [(1060, 1268), (1064, 1268), (1068, 1268), (1072, 1268)]       # neuron output latches, world x, z (y -60)
 log = open("docs/hw_brain_link.txt", "a")
@@ -19,11 +20,11 @@ def run(lines, want_winner):
     while score("#hw", "brain.st") != 1 and time.time() - t0 < 10: time.sleep(0.2)
     waited = score("#hw", "brain.st") == 1; ticks0 = score("#t", "brain.st")
     while score("#hw", "brain.st") == 1 and time.time() - t0 < 400: time.sleep(1)
-    t_hw = time.time() - t0; x4, hwy, y = score("x4"), score("hwy"), lamps()
+    t_hw = time.time() - t0; x4, hwy, y = score(f"x{UNIT}"), score("hwy"), lamps()
     while score("#state", "brain.st") != 2 and time.time() - t0 < 600: time.sleep(1)
     o = [score(f"o{k}") for k in range(8)]; rec = cmd("data get storage brain:mem list[0]")
     ok = waited and ticks0 == 1 and hwy == y == min(15, x4) and want_winner in rec
-    say(f"{' / '.join(l for l in lines if l)!r}: paused at clock tick {ticks0}, neuron {t_hw:.0f} s, x_parietal={x4} "
+    say(f"{' / '.join(l for l in lines if l)!r}: paused at clock tick {ticks0}, neuron {t_hw:.0f} s, x_unit={x4} "
         f"latch={y:04b} ({y}) hwy={hwy} o={o} -> {'OK' if ok else 'FAIL'}")
     say("  memory: " + rec.split("data: ")[-1][:300])
     return ok
@@ -31,5 +32,5 @@ def run(lines, want_winner):
 
 if __name__ == "__main__":
     say("--- link test, tick rate: " + cmd("tick query").split("Target tick rate: ")[1].split(" ")[0])
-    res = [run(["what is seven", "times eight"], "Parietal"), run(["what colors are", "in a rainbow?"], "Visual")]
+    res = [run(["who would win in", "a fight jensen", "huang or elon", "musk?"], "Prefrontal"), run(["what colors are", "in a rainbow?"], "Visual")]
     say(f"{sum(res)}/{len(res)}"); raise SystemExit(not all(res))

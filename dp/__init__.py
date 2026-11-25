@@ -2,7 +2,7 @@
 import json, math
 from types import SimpleNamespace
 from .common import *
-from . import barrels, persist, parser, network, pipeline, inject, memory, plasticity, experiments, debug, control, hwneuron
+from . import barrels, persist, parser, network, pipeline, inject, memory, plasticity, experiments, debug, control, hwneuron, racetags
 from .console import console, labels
 
 
@@ -53,5 +53,6 @@ def emit(w, REGIONS, col, feeds, lc, kw, feed_y):
     experiments.emit(c)
     debug.emit(c)
     hwneuron.emit(c)
+    racetags.emit(c)
     control.emit(c)
     return dict(R=R, cx=cx, hx=hx, hname=hname, W=W, V=V, J=J)

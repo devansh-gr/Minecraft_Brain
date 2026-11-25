@@ -11,3 +11,9 @@
 12:08:54 'what colors are / in a rainbow?': paused at clock tick 1, neuron 151 s, x_parietal=0 latch=0000 (0) hwy=0 o=[0, 0, 0, 0, 0, 0, 10, 0] -> OK
 12:08:54   memory: Storage brain:mem has the following contents: {q: "what colors are in a rainbow ", x: [0, 0, 0, 0, 0, 0, 6, 0], les: "", win: "Visual ", tr: "", o: [0, 0, 0, 0, 0, 0, 10, 0]}
 12:08:54 2/2
+04:27:12 --- link test, tick rate: 20.0
+04:30:15 'who would win in / a fight jensen / huang or elon / musk?': paused at clock tick 1, neuron 151 s, x_unit=6 latch=0110 (6) hwy=6 o=[6, 0, 0, 0, 0, 2, 2, 0] -> OK
+04:30:15   memory: Storage brain:mem has the following contents: {q: "who would win in a fight jensen huang or ", x: [6, 0, 0, 0, 0, 3, 0, 0], les: "", win: "Prefrontal ", tr: "", o: [6, 0, 0, 0, 0, 2, 2, 0]}
+04:33:29 'what colors are / in a rainbow?': paused at clock tick 1, neuron 151 s, x_unit=0 latch=0000 (0) hwy=0 o=[0, 0, 0, 0, 0, 0, 10, 0] -> OK
+04:33:29   memory: Storage brain:mem has the following contents: {q: "what colors are in a rainbow ", x: [0, 0, 0, 0, 0, 0, 6, 0], les: "", win: "Visual ", tr: "", o: [0, 0, 0, 0, 0, 0, 10, 0]}
+04:33:29 2/2
