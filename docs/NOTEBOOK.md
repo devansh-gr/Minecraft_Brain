@@ -398,3 +398,11 @@ Goal: the forward pass (weighted products, sums, activation, inhibition) compute
 - New `dp/racetags.py`: a text_display over each of the 8 competition lamp bars (z -5..-19) shows the region's plain name and the number of lit lamps, counted from the lamp blocks every 4 ticks.
 - Test (`test_hw_link.py`, 20 TPS, log docs/hw_brain_link.txt): fight question, neuron 151 s, x_prefrontal = 6, latch 0110 = 6, o = [6, 0, 0, 0, 0, 2, 2, 0] (prefrontal, temporal, occipital), winner Prefrontal. The baseline-weight model predicted temporal 4, not 2: the world's output weights were changed by earlier TRAIN runs. Rainbow control: neuron 0000, winner Visual. 2/2.
 - Tags during the fight run: "Judgment 7 lamps" and "Memory 3 lamps" about 4 s after the neuron finished, then Memory 0 lamps 2 s later while Judgment stays at 7 (the losing bar is cut by the comparators). Lamp counts are the physical bar lengths, so they can differ by one from o.
+
+### 17.v Fight-question video (2026-11-25)
+- Filmed with server view-distance 16, clear weather, noon at the neuron and midnight at the brain. Takes logged in docs/video_link_take.txt.
+- Take 1 (06:11): correct (hwy 6, latch 0110, Prefrontal), but the race tags at scale 0.9 were about 8 px tall in the render, unreadable on a phone. Tags raised to scale 2.6 at L0 + 2.2.
+- Before take 2 the latches were reset to 0000 by a real rainbow question at 100 TPS (37 s, Visual), so the 0000 to 0110 change shows on camera.
+- Take 2 (06:21, neuron_link_fight2.mcpr): RUN 06:22:57, neuron done 06:25:28 (151 s), hwy 6, x = [6,0,0,0,0,3,0,0], o = [6,0,0,0,0,2,2,0], winner Prefrontal. Tags read "Memory 3, Judgment 7, Vision 3", the rest 0, at the start of l_decide.
+- Measured in the link reel render: output lamps light 3.2 s into l_out (caption at 2.6 s into the clip); the prefrontal region starts lighting about 5 s into l_lands, so the clip starts 2 s in.
+- Cut: release/redstone_cortex.mp4, 53.4 s, 211 MB, captions as in docs/RELEASE.md. The math cut is kept as release/redstone_cortex_math.mp4.

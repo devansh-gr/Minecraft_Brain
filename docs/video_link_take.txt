@@ -50,3 +50,4 @@ Fight take 2 (recording 06:21:49, neuron_link_fight2.mcpr, used in the video): m
 06:25:29 TP BRAIN, midnight
 06:25:59 COMPLETE (readout), state 2
 06:26:14 done
+Checked in the take 2 link reel render (2026_11_25_06_27_08.mp4): neuron output lamps 0000 at 30 s, 0110 lit from 33.2 s; race tags at 36.5 s read Memory 3, Judgment 7, Movement 0, Speech 0, Math 0, Balance 0, Touch 0, Vision 3 lamps. Rainbow reset run took 37 s at 100 TPS and left the latch at 0. Take 1 tags measured about 8 px tall at 1080p.
