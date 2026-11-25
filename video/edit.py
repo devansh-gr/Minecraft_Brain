@@ -12,14 +12,14 @@ CAP_AT = {"l_out": 2.6}                                 # its output latches lig
 TOP = {"l_write"}                                      # caption at the top so the sign text stays readable
 EDL = [
     ("brain", "hook", 0.0, 4.5, "I built a brain in Minecraft", "Shaped from a real human brain scan"),
-    ("link", "l_approach", 0.0, 3.5, "You can ask it anything", ""),
-    ("link", "l_write", 0.5, 5.0, "Who would win in a fight, Jensen Huang or Elon Musk?", ""),
+    ("link", "l_approach", 0.0, 3.5, "Ask it any question...", ""),
+    ("link", "l_write", 0.3, 5.5, "ANY question", ""),
     ("link", "l_press", 0.0, 2.5, "Press RUN", ""),
     ("link", "l_proc", 0.0, 3.0, "A neural network reads your question", ""),
-    ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", "Part of the neural network is built from pure redstone"),
+    ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", ""),
     ("link", "l_lapse", 0.5, 3.5, "Thinking...", ""),
     ("link", "l_out", 0.5, 5.0, "Is this asking for an opinion? Yes.", ""),
-    ("link", "l_decide", 0.5, 6.0, "Judgment, memory and vision fight over it", "The strongest signal wins"),
+    ("link", "l_decide", 0.5, 8.8, "Judgment, memory and vision fight over it", "The strongest signal wins"),
     ("link", "l_axon", 0.0, 5.0, "Judgment wins. The signal shoots up to the brain...", ""),
     ("link", "l_lands", 2.0, 6.0, "...and triggers the prefrontal cortex", "The part real brains use to judge things"),
     ("brain", "hero", 0.0, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),

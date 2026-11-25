@@ -89,10 +89,16 @@ for n, base, t in [("l_approach", "approach", [(0, LWALK - 500), (4000, LWALK + 
                    ("l_flyover", "flyover", [(0, LTPN + 8000), (10000, LTPN + 28000)]),
                    ("l_lapse", "lapse4", [(0, LTPN + 30000), (5000, LDONE - 12000)]),
                    ("l_out", "out4", [(0, LDONE - 5500), (6000, LDONE + 500)]),
-                   ("l_decide", "decide", [(0, LDONE + 3500), (6000, LDONE + 9500)]),
+                   ("l_decide", "decide", [(0, LDONE + 3000), (10000, LDONE + 13000)]),
                    ("l_axon", "axon", [(0, LDONE + 14000), (6000, LDONE + 20000)]),
                    ("l_lands", "lands", [(0, LDONE + 20500), (8000, LDONE + 28500)])]:
     SHOTS[n] = dict(cam=SHOTS[base]["cam"], time=t)
+# Sign: push in close and nearly freeze on the finished text (typing at 1x, then 0.2 s of game time over 3.5 s)
+SHOTS["l_write"] = dict(cam=[(0, (2.6, -59.6, -76.8), (2.0, -60.1, -74)), (2500, (2.0, -59.95, -75.5), (2.0, -59.97, -74)),
+                             (6000, (2.0, -59.97, -75.2), (2.0, -59.97, -74))],          # camera y is body height: eye = y + 1.62
+                        time=[(0, LSIGNED - 2500), (2500, LSIGNED + 200), (6000, LSIGNED + 400)])
+SHOTS["l_decide"] = dict(cam=[(0, (14.0, -50.0, -24.2), (14.0, -59.4, -13.0)), (10000, (14.0, -49.3, -23.0), (14.0, -59.4, -13.0))],  # centred on the 8 tags (x 0.5 to 28.5), eye about 14 blocks away
+                         time=[(0, LDONE + 1500), (10000, LDONE + 11500)])
 SHOTS["l_lands"]["cam"] = [(0, (28, 6, 20), PREFRONTAL), (8000, (32, 14, 42), PREFRONTAL)]
 
 
