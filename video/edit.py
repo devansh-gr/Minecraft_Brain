@@ -9,7 +9,13 @@ FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 # (reel, shot, start offset s, length s, caption, small label); CAP_AT: caption start (s into clip) where it must wait
 # for the physical lamps (measured in the render: lamps change 2.9 s / 2.4 s into out4 / out8)
 CAP_AT = {"l_out": 2.6}                                 # its output latches light 3.2 s into l_out, 2.7 s into the clip (measured in the fight reel render)
-TOP = {"l_write"}                                      # caption at the top so the sign text stays readable
+TOP = {"l_write"}
+# Bloom on lit redstone lamps only (pixels with R > 150, G > 110, R - B > 90): a tight glow plus a wide halo, screen-blended
+LAMP = "format=rgb24,geq=r='255*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':g='210*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':b='110*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)'"
+BLOOM = {"l_axon", "l_lands", "l_hero"}
+GLOW = (f"split=3[o][m1][m2];[m1]{LAMP},gblur=sigma=7,colorlevels=rimax=0.15:gimax=0.15:bimax=0.15[gc];"
+        f"[m2]{LAMP},gblur=sigma=50,colorlevels=rimax=0.04:gimax=0.04:bimax=0.04[gh];[gc][gh]blend=all_mode=screen[gg];[o][gg]blend=all_mode=screen,format=yuv420p,")
+                                      # caption at the top so the sign text stays readable
 EDL = [
     ("brain", "hook", 0.0, 4.5, "I built a brain in Minecraft", "Shaped from a real human brain scan"),
     ("link", "l_approach", 0.0, 3.5, "Ask it any question...", ""),
@@ -22,7 +28,7 @@ EDL = [
     ("link", "l_decide", 0.5, 8.8, "Judgment, memory and vision fight over it", "The strongest signal wins"),
     ("link", "l_axon", 0.0, 5.0, "Judgment wins. The signal shoots up to the brain...", ""),
     ("link", "l_lands", 2.0, 6.0, "...and triggers the prefrontal cortex", "The part real brains use to judge things"),
-    ("brain", "hero", 0.0, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),
+    ("link", "l_hero", 0.5, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),
 ]
 
 
@@ -48,7 +54,7 @@ def main(brain_mp4, link_mp4, out):
         ln = min(ln, round(s1 - t, 3)); EDL[i] = EDL[i][:3] + (ln,) + EDL[i][4:]   # never run into the next shot
         png = f"{tmp}/c{i}.png"; caption(png, big, small, n in TOP); p = f"{tmp}/p{i}.mp4"
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.3f}", "-t", f"{ln}", "-i", src[r], "-loop", "1", "-t", f"{ln}", "-i", png,
-                        "-filter_complex", f"[0:v]scale={W}:{H},fps={FPS},setsar=1[v];[1:v]format=rgba,fade=in:st={CAP_AT.get(n, 0.3)}:d=0.4:alpha=1,"
+                        "-filter_complex", f"[0:v]scale={W}:{H},fps={FPS},{GLOW if n in BLOOM else ''}setsar=1[v];[1:v]format=rgba,fade=in:st={CAP_AT.get(n, 0.3)}:d=0.4:alpha=1,"
                         f"fade=out:st={ln - 0.5}:d=0.4:alpha=1[c];[v][c]overlay=0:0,format=yuv420p",
                         "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "16", p], check=True)
         parts.append(p)

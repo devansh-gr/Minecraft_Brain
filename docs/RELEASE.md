@@ -4,9 +4,10 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 
 ## Files
 
-- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 57.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 213 MB, sha256 `4cff83d8b5954c33...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
+- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 57.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 217 MB, sha256 `4d1b7421a3475a98...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
 - Cover: `docs/img/launch/cover.jpg`. Screenshots: `docs/img/launch/` (from the math cut).
 - Camera paths: `video/shots.py`. Edit: `video/edit.py`. Replays: `clienttest/replay_recordings/neuron_link_fight2.mcpr` and `brain_takes.mcpr` (local).
+- Post: lit redstone lamps get a bloom glow in the last three shots (`video/edit.py` BLOOM: only pixels with R > 150, G > 110, R - B > 90 glow; nothing else is changed).
 - Render settings: ReplayMod default rendering, MP4 custom bitrate 40 Mbps, 2560 x 1440, 60 FPS. Final encode: x264 CRF 17, AAC 192k.
 - Audio: original track synthesized by `video/music.py` (Am-F-C-G pad, arpeggio, soft kick), no samples or third-party music. Placeholder; may be replaced in post.
 
@@ -25,9 +26,9 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 | 33 to 41.8 s | Judgment, memory and vision fight over it | The 8 comparator rails race under floating lamp-count tags: all 0, then Memory 3, Judgment 7, Vision 3; Memory drops to 0, then Vision; Judgment stays at 7 | 1x |
 | 41.8 to 46.8 s | Judgment wins. The signal shoots up to the brain... | The winner's axon lane lights toward the brain | 1x |
 | 46.8 to 52.8 s | ...and triggers the prefrontal cortex | The prefrontal region lights | 1x |
-| 52.8 to 57.8 s | REDSTONE CORTEX | Hero shot, region lit (from the earlier brain take) | 1x |
+| 52.8 to 57.8 s | REDSTONE CORTEX | Hero pull-back from the same run, prefrontal still lit | 1x |
 
-All shots from 4.5 s to 52.8 s are one continuous run, fight take 2 in [video_link_take.txt](video_link_take.txt) (RUN at 06:22:57, neuron done at 06:25:28 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual), so the change to 0110 is visible. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6.
+All shots from 4.5 s to the end are one continuous run, fight take 2 in [video_link_take.txt](video_link_take.txt) (RUN at 06:22:57, neuron done at 06:25:28 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual), so the change to 0110 is visible. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6.
 
 ## X post
 

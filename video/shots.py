@@ -99,6 +99,8 @@ SHOTS["l_write"] = dict(cam=[(0, (2.6, -59.6, -76.8), (2.0, -60.1, -74)), (2500,
                         time=[(0, LSIGNED - 2500), (2500, LSIGNED + 200), (6000, LSIGNED + 400)])
 SHOTS["l_decide"] = dict(cam=[(0, (14.0, -50.0, -24.2), (14.0, -59.4, -13.0)), (10000, (14.0, -49.3, -23.0), (14.0, -59.4, -13.0))],  # centred on the 8 tags (x 0.5 to 28.5), eye about 14 blocks away
                          time=[(0, LDONE + 1500), (10000, LDONE + 11500)])
+# Hero from the fight run itself, so the lit region is the prefrontal (the region stays lit until decay, LDONE + 42 s)
+SHOTS["l_hero"] = dict(cam=[(0, (30, 8, 20), (20, -5, 95)), (6000, (26, 16, -10), (20, -5, 95))], time=[(0, LDONE + 29000), (6000, LDONE + 35000)])  # pull back from the l_lands side, prefrontal on the left
 SHOTS["l_lands"]["cam"] = [(0, (28, 6, 20), PREFRONTAL), (8000, (32, 14, 42), PREFRONTAL)]
 
 
@@ -123,7 +125,7 @@ def timelines(s):
 # One render per replay: shots in replay-time order, joined by 1 ms hard cuts (linear segment), each shot its own spline.
 REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "activate", "hero"],
          "demo": ["approach", "write", "press", "proc", "decide", "axon", "lands"],
-         "link": ["l_approach", "l_write", "l_press", "l_proc", "l_flyover", "l_lapse", "l_out", "l_decide", "l_axon", "l_lands"]}
+         "link": ["l_approach", "l_write", "l_press", "l_proc", "l_flyover", "l_lapse", "l_out", "l_decide", "l_axon", "l_lands", "l_hero"]}
 
 
 def reel(names):
