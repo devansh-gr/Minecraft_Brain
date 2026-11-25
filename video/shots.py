@@ -24,11 +24,11 @@ WALK, EDIT, SIGNED, RUN = evd("05:25:35"), evd("05:25:40"), evd("05:25:49"), evd
 SIGN = (2, -58.6, -74)
 BUTTON = (4, -59, -74)
 
-# Linked replay (neuron_link.mcpr) starts 22:29:51 (take 3); events from (docs/video_link_take.txt).
+# Linked replay (neuron_link_fight2.mcpr) starts 06:21:49 (fight take 2, tags x2.6, 2026-11-25); events from (docs/video_link_take.txt).
 # The redstone neuron sits at the same spot as on the HW server, so the neuron camera paths carry over.
-T0L = 22 * 3600 + 29 * 60 + 51
+T0L = 6 * 3600 + 21 * 60 + 49
 evl = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60, 1))) - T0L) * 1000)
-LWALK, LSIGNED, LRUN, LTPN, LDONE = evl("22:30:16"), evl("22:30:25"), evl("22:30:26"), evl("22:30:30"), evl("22:32:57")
+LWALK, LSIGNED, LRUN, LTPN, LDONE = evl("06:22:45"), evl("06:22:56"), evl("06:22:57"), evl("06:23:01"), evl("06:25:28")
 
 REG = (982, -60, 1048)         # W0 register row (crossbar row 1)
 LAMPS = (1066, -60, 1269)       # 4 output lamps (x 1060..1072)

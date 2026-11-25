@@ -11,10 +11,10 @@ def emit(c):
     w, R, cx = c.w, c.R, c.cx
     init = ["kill @e[type=text_display,tag=race]"]
     for r in R:
-        init.append(f'summon text_display {cx[r] + 0.5} {L0 + 1.6} -12.5 {{billboard:"center",line_width:120,'
+        init.append(f'summon text_display {cx[r] + 0.5} {L0 + 2.2} -12.5 {{billboard:"center",line_width:120,'
                     f'background:1342177280,text:{json.dumps(PLAIN[r] + chr(10) + "0 lamps")},'
                     f'Tags:["ui","race","race_{r}"],transformation:{{left_rotation:[0f,0f,0f,1f],'
-                    f'right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.9f,0.9f,0.9f]}}}}')
+                    f'right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[2.6f,2.6f,2.6f]}}}}')
     w("race/init", init)
     upd = []
     for r in R:

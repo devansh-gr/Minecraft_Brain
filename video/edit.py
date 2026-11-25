@@ -8,20 +8,20 @@ W, H, FPS = 2560, 1440, 60
 FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 # (reel, shot, start offset s, length s, caption, small label); CAP_AT: caption start (s into clip) where it must wait
 # for the physical lamps (measured in the render: lamps change 2.9 s / 2.4 s into out4 / out8)
-CAP_AT = {"l_out": 2.3}                                 # its output latches light about 3.0 s into l_out, 2.5 s into the clip (measured in the reel render)
+CAP_AT = {"l_out": 2.6}                                 # its output latches light 3.2 s into l_out, 2.7 s into the clip (measured in the fight reel render)
 TOP = {"l_write"}                                      # caption at the top so the sign text stays readable
 EDL = [
     ("brain", "hook", 0.0, 4.5, "I built a brain in Minecraft", "Shaped from a real human brain scan"),
-    ("link", "l_approach", 0.0, 4.0, "Walk up and ask it a question", ""),
-    ("link", "l_write", 0.5, 4.5, "Write it on a sign", ""),
-    ("link", "l_press", 0.0, 3.0, "Press RUN", ""),
-    ("link", "l_proc", 0.0, 3.0, "The brain reads your question", ""),
-    ("link", "l_flyover", 1.0, 5.5, "One of its neurons is pure redstone", "Its job: spot math. Sped up"),
-    ("link", "l_lapse", 0.5, 4.0, "It works out how much math is in the question", "Sped up"),
-    ("link", "l_out", 0.5, 5.0, "Lots of math, so its lamps light up", ""),
-    ("link", "l_decide", 0.5, 5.0, "Every brain area competes for the question", "The math signal wins"),
-    ("link", "l_axon", 0.0, 5.5, "The winner fires down a redstone nerve", ""),
-    ("link", "l_lands", 0.0, 6.5, "and the brain's math area lights up", "Real brains do math here too"),
+    ("link", "l_approach", 0.0, 3.5, "You can ask it anything", ""),
+    ("link", "l_write", 0.5, 5.0, "Who would win in a fight, Jensen Huang or Elon Musk?", ""),
+    ("link", "l_press", 0.0, 2.5, "Press RUN", ""),
+    ("link", "l_proc", 0.0, 3.0, "A neural network reads your question", ""),
+    ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", "Part of the neural network is built from pure redstone"),
+    ("link", "l_lapse", 0.5, 3.5, "Thinking...", ""),
+    ("link", "l_out", 0.5, 5.0, "Is this asking for an opinion? Yes.", ""),
+    ("link", "l_decide", 0.5, 6.0, "Judgment, memory and vision fight over it", "The strongest signal wins"),
+    ("link", "l_axon", 0.0, 5.0, "Judgment wins. The signal shoots up to the brain...", ""),
+    ("link", "l_lands", 2.0, 6.0, "...and triggers the prefrontal cortex", "The part real brains use to judge things"),
     ("brain", "hero", 0.0, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),
 ]
 
