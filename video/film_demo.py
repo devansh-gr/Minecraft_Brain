@@ -17,7 +17,7 @@ def face(x, y, z):                    # aim from the eyes (rotate ... facing aim
     cmd(f"rotate Camera {math.degrees(math.atan2(-dx, dz)):.2f} {-math.degrees(math.atan2(dy, math.hypot(dx, dz))):.2f}")
 def inp(*a): subprocess.run([INP, *map(str, a)], check=True)
 
-cmd("team add cam"); cmd("team modify cam nametagVisibility never"); cmd("team join cam Camera")
+cmd("weather clear 1000000"); cmd("time set midnight"); cmd("team add cam"); cmd("team modify cam nametagVisibility never"); cmd("team join cam Camera")
 for q in ([["what is seven", "times eight"]] if len(sys.argv) < 2 else [sys.argv[1:3]]):
     while state() != 0: time.sleep(1)
     cmd('data merge block 2 -59 -74 {front_text:{messages:["","","",""]}}')
@@ -30,10 +30,10 @@ for q in ([["what is seven", "times eight"]] if len(sys.argv) < 2 else [sys.argv
     face(4.5, -58.97, -73.5); time.sleep(1.0)
     inp("key", 15); say("RUN pressed")
     t = time.time(); time.sleep(4)                    # input lamps light at the console
-    cmd("gamemode spectator Camera"); cmd("tp Camera 930 -20 1290 0 90"); say("TP NEURON")   # follow it to the neuron
+    cmd("gamemode spectator Camera"); cmd("tp Camera 930 -20 1290 0 90"); cmd("time set noon"); say("TP NEURON, daylight")   # follow it to the neuron
     while hw() == 1 and time.time() - t < 400: time.sleep(0.5)
     say(f"NEURON DONE, hwy {cmd('scoreboard players get hwy brain.n').split('has ')[-1]}"); time.sleep(1.5)
-    cmd("tp Camera 16 -40 -60 180 60"); say("TP BRAIN")
+    cmd("tp Camera 16 -40 -60 180 60"); cmd("time set midnight"); say("TP BRAIN, midnight")
     while state() != 2 and time.time() - t < 600: time.sleep(0.5)
     say(f"COMPLETE (readout), state {state()}"); time.sleep(15)
 say("done")

@@ -17,3 +17,30 @@
 05:27:15 RUN pressed
 05:27:47 COMPLETE (readout), state 2
 05:28:02 done
+22:12:36 WALK
+22:12:40 EDIT SIGN
+22:12:45 SIGN 2, -59, -74 has the following block data: ["what is seven", "times eight", "", ""]
+22:12:46 RUN pressed
+22:12:50 TP NEURON
+22:15:16 NEURON DONE, hwy 9 [brain.n]
+22:15:18 TP BRAIN
+22:15:49 COMPLETE (readout), state 2
+22:16:04 done
+22:21:37 WALK
+22:21:41 EDIT SIGN
+22:21:46 SIGN 2, -59, -74 has the following block data: ["what is seven", "times eight", "", ""]
+22:21:47 RUN pressed
+22:21:51 TP NEURON, daylight
+22:24:18 NEURON DONE, hwy 9 [brain.n]
+22:24:20 TP BRAIN, midnight
+22:24:50 COMPLETE (readout), state 2
+22:25:05 done
+22:30:16 WALK
+22:30:20 EDIT SIGN
+22:30:25 SIGN 2, -59, -74 has the following block data: ["what is seven", "times eight", "", ""]
+22:30:26 RUN pressed
+22:30:30 TP NEURON, daylight
+22:32:57 NEURON DONE, hwy 9 [brain.n]
+22:32:58 TP BRAIN, midnight
+22:33:29 COMPLETE (readout), state 2
+22:33:44 done

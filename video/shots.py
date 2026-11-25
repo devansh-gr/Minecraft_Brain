@@ -23,6 +23,12 @@ WALK, EDIT, SIGNED, RUN = evd("05:25:35"), evd("05:25:40"), evd("05:25:49"), evd
 SIGN = (2, -58.6, -74)
 BUTTON = (4, -59, -74)
 
+# Linked replay (neuron_link.mcpr) starts 22:29:51 (take 3); events from (docs/video_link_take.txt).
+# The redstone neuron sits at the same spot as on the HW server, so the neuron camera paths carry over.
+T0L = 22 * 3600 + 29 * 60 + 51
+evl = lambda hms: int((sum(int(a) * b for a, b in zip(hms.split(":"), (3600, 60, 1))) - T0L) * 1000)
+LWALK, LSIGNED, LRUN, LTPN, LDONE = evl("22:30:16"), evl("22:30:25"), evl("22:30:26"), evl("22:30:30"), evl("22:32:57")
+
 REG = (982, -60, 1048)         # W0 register row (crossbar row 1)
 LAMPS = (1066, -60, 1269)       # 4 output lamps (x 1060..1072)
 
@@ -74,6 +80,18 @@ SHOTS = {
     "lands": dict(cam=[(0, (-8, 6, 20), PARIETAL), (8000, (-2, 14, 42), PARIETAL)],
                   time=[(0, RUN + 20500), (8000, RUN + 28500)]),
 }
+# --- linked take: same choreography, the run detours through the redstone neuron (brain clock paused until LDONE)
+for n, base, t in [("l_approach", "approach", [(0, LWALK - 500), (4000, LWALK + 3500)]),
+                   ("l_write", "write", [(0, LSIGNED - 4500), (5000, LSIGNED + 500)]),
+                   ("l_press", "press", [(0, LSIGNED + 500), (3000, LRUN + 500)]),
+                   ("l_proc", "proc", [(0, LRUN + 500), (3000, LRUN + 3500)]),
+                   ("l_flyover", "flyover", [(0, LTPN + 8000), (10000, LTPN + 28000)]),
+                   ("l_lapse", "lapse4", [(0, LTPN + 30000), (5000, LDONE - 12000)]),
+                   ("l_out", "out4", [(0, LDONE - 5500), (6000, LDONE + 500)]),
+                   ("l_decide", "decide", [(0, LDONE + 3500), (6000, LDONE + 9500)]),
+                   ("l_axon", "axon", [(0, LDONE + 14000), (6000, LDONE + 20000)]),
+                   ("l_lands", "lands", [(0, LDONE + 20500), (8000, LDONE + 28500)])]:
+    SHOTS[n] = dict(cam=SHOTS[base]["cam"], time=t)
 
 
 def rot(eye, at):
@@ -96,7 +114,8 @@ def timelines(s):
 
 # One render per replay: shots in replay-time order, joined by 1 ms hard cuts (linear segment), each shot its own spline.
 REELS = {"neuron": ["reg4", "lapse4", "out4", "reg8", "flyover", "out8"], "brain": ["hook", "reveal", "activate", "hero"],
-         "demo": ["approach", "write", "press", "proc", "decide", "axon", "lands"]}
+         "demo": ["approach", "write", "press", "proc", "decide", "axon", "lands"],
+         "link": ["l_approach", "l_write", "l_press", "l_proc", "l_flyover", "l_lapse", "l_out", "l_decide", "l_axon", "l_lands"]}
 
 
 def reel(names):

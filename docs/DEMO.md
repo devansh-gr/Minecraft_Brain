@@ -7,6 +7,7 @@ Every frame in the video is real Minecraft footage recorded with ReplayMod, from
 | Replay | World | What happened (log) |
 |---|---|---|
 | `neuron_demo_vd20.mcpr` (506 s) | `server_hw/` HW, neuron at (1000, 1300) | w0=4 -> y=4, then w0=8 -> y=9, same x0=5, x1=3, w1=-2, b=3, at 20 TPS ([log](hw_demo_weight_change.txt), takes from 17:04) |
+| `neuron_link.mcpr` (244 s, take 3) | `server/` BrainUpright, with the redstone neuron at (1000, 1300) | The current video. Same walk, sign and RUN; the recording player follows the run to the neuron (noon, clear weather) while the brain waits for it, then back to the brain (midnight) for the race, axon and lit region ([log](video_link_take.txt)) |
 | `demo_takes.mcpr` (487 s) | `server/` BrainUpright | A survival player walks to the console, types "what is seven times eight" on the sign and presses RUN; then "can you hear the music?" as a backup take ([log](video_demo_takes.txt)). Keyboard input sent to the client by `video/film_demo.py` |
 | `brain_takes.mcpr` (206 s) | `server/` BrainUpright | 60 s idle at frozen midnight, then "what is seven times eight" and "can you hear the music?" through the normal sign + RUN path ([log](video_brain_takes.txt)) |
 
@@ -14,13 +15,14 @@ Recording client: Fabric 0.20.1 + ReplayMod 26.3-2.6.28 + Fabric API 0.167.0+26.
 
 ## Shots
 
-All camera paths are source code in [`video/shots.py`](../video/shots.py): keyframes of (render time, eye, look-at) on a centripetal Catmull-Rom spline, plus a linear replay-time path. `python3 video/shots.py neuron|brain|demo REPLAY.mcpr` writes one reel into the replay; each reel is one render with 1 ms hard cuts between shots.
+All camera paths are source code in [`video/shots.py`](../video/shots.py): keyframes of (render time, eye, look-at) on a centripetal Catmull-Rom spline, plus a linear replay-time path. `python3 video/shots.py neuron|brain|demo|link REPLAY.mcpr` writes one reel into the replay; each reel is one render with 1 ms hard cuts between shots.
 
 | Shot | Replay | Content | Speed |
 |---|---|---|---|
 | hook | brain | close on the cortex, pull back | 1x |
 | approach, write, press | demo | the player walks to the console, the question appears on the sign, RUN lights | 1x, 1x, 0.67x |
 | proc, decide, axon, lands | demo | input lamps, the 8 comparator rails (one stays lit), the winner's axon lane, the parietal region lighting, all from the same run | 1x |
+| l_approach to l_lands | link | the same walk/sign/RUN/input shots, then l_flyover (neuron, 2x), l_lapse (about 21x), l_out (output lamps 0000 to 1001), then race, axon and lit region from the same run | see RELEASE.md |
 | reveal | brain | three-quarter orbit of the lit hemisphere | 1x |
 | flyover | neuron | low pass over the circuit rising to the full 460 x 501 array, during the w0=8 run | 2x, labelled |
 | reg4, reg8 | neuron | the W0 register row as the weight is written | 1.4x |
@@ -29,7 +31,7 @@ All camera paths are source code in [`video/shots.py`](../video/shots.py): keyfr
 | activate | brain | the winning region lights after RUN | 1x |
 | hero | brain | rising pullback, whole brain | 1x |
 
-The brain shots show the separate hybrid brain. Captions say so; the neuron does not drive it.
+Since 2026-11-24 the redstone neuron is part of the brain (its math detector, README section 2). The current video uses the `link` reel plus the brain reel's hook and hero shots.
 
 Render: 2560 x 1440, 60 FPS, H.264, from the ReplayMod render dialog. Final edit and captions: ffmpeg via `video/edit.py`. Music: original, synthesized by `video/music.py`.
 
