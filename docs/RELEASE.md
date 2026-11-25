@@ -4,10 +4,10 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 
 ## Files
 
-- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 57.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 217 MB, sha256 `4d1b7421a3475a98...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
+- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 57.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 219 MB, sha256 `47c535c5d0d0e17d...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
 - Cover: `docs/img/launch/cover.jpg`. Screenshots: `docs/img/launch/` (from the math cut).
-- Camera paths: `video/shots.py`. Edit: `video/edit.py`. Replays: `clienttest/replay_recordings/neuron_link_fight2.mcpr` and `brain_takes.mcpr` (local).
-- Post: lit redstone lamps get a bloom glow in the last three shots (`video/edit.py` BLOOM: only pixels with R > 150, G > 110, R - B > 90 glow; nothing else is changed).
+- Camera paths: `video/shots.py`. Edit: `video/edit.py`. Replays: `clienttest/replay_recordings/neuron_link_fight3.mcpr` and `brain_takes.mcpr` (local).
+- No visual effects: the footage is plain ReplayMod renders; only captions are added.
 - Render settings: ReplayMod default rendering, MP4 custom bitrate 40 Mbps, 2560 x 1440, 60 FPS. Final encode: x264 CRF 17, AAC 192k.
 - Audio: original track synthesized by `video/music.py` (Am-F-C-G pad, arpeggio, soft kick), no samples or third-party music. Placeholder; may be replaced in post.
 
@@ -28,7 +28,7 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 | 46.8 to 52.8 s | ...and triggers the prefrontal cortex | The prefrontal region lights | 1x |
 | 52.8 to 57.8 s | REDSTONE CORTEX | Hero pull-back from the same run, prefrontal still lit | 1x |
 
-All shots from 4.5 s to the end are one continuous run, fight take 2 in [video_link_take.txt](video_link_take.txt) (RUN at 06:22:57, neuron done at 06:25:28 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual), so the change to 0110 is visible. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6.
+All shots from 4.5 s to the end are one continuous run, fight take 3 in [video_link_take.txt](video_link_take.txt) (RUN at 07:52:43, neuron done at 07:55:14 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual), so the change to 0110 is visible. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6. Take 3 was filmed after the prefrontal got denser lamps (dust on every plate row: 25.9% of its surface lights instead of 12.9%; anatomy check 8/8 regions, P99 at most 23.6 ms).
 
 ## X post
 

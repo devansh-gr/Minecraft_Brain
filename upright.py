@@ -24,6 +24,7 @@ L0, L1 = -60, -59           # tract support / tract level (inside the pedestal)
 MAX_EXPOSED = 6             # preferred max height of ladder visible below the brain (blocks)
 RING = 8                    # dust cells between repeater rings on a plate
 LINE = 2                    # dust on every LINE-th row (lamps between are lit by their powered neighbours)
+LINE_BY = {"prefrontal": 1}  # denser dust in the prefrontal only: its lit surface 12.9% -> 25.9% (launch video, 2026-11-25)
 RING_DELAY = 3              # repeater delay; odd vs the ladder's 4-tick plate spacing spreads the work
 RISER_EXPOSED = 8            # a hidden feed's riser may show this much below the brain
 MAX_LOSS = 0.15            # hide a stilt only if at most this share of the region's plate area is lost
@@ -80,13 +81,13 @@ def shells(T):
     return l1, l2
 
 
-def design_plate(cells, feed):
+def design_plate(cells, feed, line=LINE):
     """Flat plate: every cell gets a lamp, but only the rim, the spokes and every LINE-th row carry dust.
     A lamp under powered dust is strongly powered and lights its lamp neighbours, so the rows between dust
     lines still light. Euclidean repeater rings give reach. Returns lamps, dust, reps, lit (dust-lit) cells."""
     cells = set(cells)
     rim = {q for q in cells if any((q[0] + a, q[1] + b) not in cells for a, b in NB4)}
-    lines = {q for q in cells if (q[0] - feed[0]) % LINE == 0 or q[0] == feed[0] or q[1] == feed[1]}
+    lines = {q for q in cells if (q[0] - feed[0]) % line == 0 or q[0] == feed[0] or q[1] == feed[1]}
     mesh = (rim | lines) - {feed}
     zone = {q: int(math.hypot(q[0] - feed[0], q[1] - feed[1]) // (RING + 1)) for q in mesh}
     # only the 4-connected piece reachable from the ladder
@@ -315,13 +316,13 @@ def build(root, regions, stem_index, fills3):
                                 c2.add((a_, b_))
                                 a_, b_ = a_ + ea, b_ + eb
                         c2.add(p3)
-                        d2 = design_plate(c2, p3)
+                        d2 = design_plate(c2, p3, LINE_BY.get(regions[r][0], LINE))
                         vis = sum(1 for a, b in d2["glow"] if behind[a, b, k - 3])
                         if len(d2["lit"]) >= 4 and vis >= MID_EFF * len(d2["dust"]):
                             mid, step = d2, (p0, p1, p2, p3, (da, db))
                             cells = cells - {p1}
                             break
-            d = design_plate(cells, (li, lj))
+            d = design_plate(cells, (li, lj), LINE_BY.get(regions[r][0], LINE))
             if len(d["lit"]) < 4:
                 continue
             plates[(r, k)] = d

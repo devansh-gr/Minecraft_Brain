@@ -12,7 +12,7 @@ CAP_AT = {"l_out": 2.6}                                 # its output latches lig
 TOP = {"l_write"}
 # Bloom on lit redstone lamps only (pixels with R > 150, G > 110, R - B > 90): a tight glow plus a wide halo, screen-blended
 LAMP = "format=rgb24,geq=r='255*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':g='210*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':b='110*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)'"
-BLOOM = {"l_axon", "l_lands", "l_hero"}
+BLOOM = set()                                          # bloom off: the user wants vanilla-looking light only
 GLOW = (f"split=3[o][m1][m2];[m1]{LAMP},gblur=sigma=7,colorlevels=rimax=0.15:gimax=0.15:bimax=0.15[gc];"
         f"[m2]{LAMP},gblur=sigma=50,colorlevels=rimax=0.04:gimax=0.04:bimax=0.04[gh];[gc][gh]blend=all_mode=screen[gg];[o][gg]blend=all_mode=screen,format=yuv420p,")
                                       # caption at the top so the sign text stays readable
