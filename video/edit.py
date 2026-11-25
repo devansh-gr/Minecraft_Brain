@@ -8,7 +8,7 @@ W, H, FPS = 2560, 1440, 60
 FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 # (reel, shot, start offset s, length s, caption, small label); CAP_AT: caption start (s into clip) where it must wait
 # for the physical lamps (measured in the render: lamps change 2.9 s / 2.4 s into out4 / out8)
-CAP_AT = {"l_out": 2.3}                                 # its output latches light 2.6 s into l_out (measured in the render)
+CAP_AT = {"l_out": 2.3}                                 # its output latches light about 3.0 s into l_out, 2.5 s into the clip (measured in the reel render)
 TOP = {"l_write"}                                      # caption at the top so the sign text stays readable
 EDL = [
     ("brain", "hook", 0.0, 4.5, "I built a brain in Minecraft", "Shaped from a real human brain scan"),

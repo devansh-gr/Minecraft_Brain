@@ -1,6 +1,6 @@
 # Release: Redstone Cortex launch
 
-Demonstrated version: commit `023589c` (neuron hardware unchanged since the 10/10 run; this commit adds the final shot timings and stills).
+Demonstrated version: commit `5ade432` (redstone neuron linked into the brain as its math detector; neuron hardware unchanged since the 10/10 run). Video, shot timings and docs: `84edf6f` and later.
 
 ## Files
 
