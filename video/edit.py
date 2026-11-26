@@ -19,7 +19,7 @@ GLOW = (f"split=3[o][m1][m2];[m1]{LAMP},gblur=sigma=7,colorlevels=rimax=0.15:gim
 EDL = [
     ("brain", "hook", 0.0, 4.5, "I built a brain in Minecraft", "Shaped from a real human brain scan"),
     ("link", "l_approach", 0.0, 3.5, "Ask it any question...", ""),
-    ("link", "l_write", 0.3, 5.5, "ANY question", ""),
+    ("link", "l_write", 0.3, 4.0, "ANY question", ""),
     ("link", "l_press", 0.0, 2.5, "Press RUN", ""),
     ("link", "l_proc", 0.0, 3.0, "A neural network reads your question", ""),
     ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", ""),
