@@ -8,7 +8,7 @@ W, H, FPS = 2560, 1440, 60
 FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 # (reel, shot, start offset s, length s, caption, small label); CAP_AT: caption start (s into clip) where it must wait
 # for the physical lamps (measured in the render: lamps change 2.9 s / 2.4 s into out4 / out8)
-CAP_AT = {"l_out": 2.6}                                 # its output latches light 3.2 s into l_out, 2.7 s into the clip (measured in the fight reel render)
+CAP_AT = {}                               # caption start (s into clip) for shots whose caption must wait
 TOP = {"l_write"}
 # Bloom on lit redstone lamps only (pixels with R > 150, G > 110, R - B > 90): a tight glow plus a wide halo, screen-blended
 LAMP = "format=rgb24,geq=r='255*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':g='210*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)':b='110*gt(r(X,Y),150)*gt(r(X,Y)-b(X,Y),90)*gt(g(X,Y),110)'"
@@ -24,8 +24,7 @@ EDL = [
     ("link", "l_proc", 0.0, 3.0, "A neural network reads your question", ""),
     ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", ""),
     ("link", "l_lapse", 0.5, 3.5, "Thinking...", ""),
-    ("link", "l_out", 0.5, 5.0, "Is this asking for an opinion? Yes.", ""),
-    ("link", "l_decide", 0.5, 8.8, "Judgment, memory and vision fight over it", "The strongest signal wins"),
+    ("link", "l_decide", 0.5, 8.8, "Redstone comparators measure each region's signal", "The strongest signal wins"),
     ("link", "l_axon", 0.0, 5.0, "Judgment wins. The signal shoots up to the brain...", ""),
     ("link", "l_lands", 2.0, 6.0, "...and triggers the prefrontal cortex", "The part real brains use to judge things"),
     ("link", "l_hero", 0.5, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),

@@ -4,7 +4,7 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 
 ## Files
 
-- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 57.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 219 MB, sha256 `47c535c5d0d0e17d...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
+- Video: `release/redstone_cortex.mp4` (local, not in git: GitHub caps files at 100 MB). 52.8 s, 2560 x 1440, 60 FPS, H.264 + AAC, 202 MB, sha256 `8644248bf0310e56...`. Fits X (under 512 MB and 140 s). The earlier math cut is kept as `release/redstone_cortex_math.mp4`.
 - Cover: `docs/img/launch/cover.jpg`. Screenshots: `docs/img/launch/` (from the math cut).
 - Camera paths: `video/shots.py`. Edit: `video/edit.py`. Replays: `clienttest/replay_recordings/neuron_link_fight3.mcpr` and `brain_takes.mcpr` (local).
 - No visual effects: the footage is plain ReplayMod renders; only captions are added.
@@ -22,13 +22,12 @@ Demonstrated version: commit `87bf3de` (redstone neuron linked into the brain as
 | 16 to 19 s | A neural network reads your question | Input lamps light | 1x |
 | 19 to 24.5 s | and decides which part of the brain it triggers | The redstone neuron (the network's judgment detector) computing; the brain's clock is paused | 2x |
 | 24.5 to 28 s | Thinking... | Same computation | time-lapse, about 21x |
-| 28 to 33 s | Is this asking for an opinion? Yes. | Its 4 output lamps change from 0000 to 0110 (6) at 30.7 s; caption appears as they change | 1x |
-| 33 to 41.8 s | Judgment, memory and vision fight over it | The 8 comparator rails race under floating lamp-count tags: all 0, then Memory 3, Judgment 7, Vision 3; Memory drops to 0, then Vision; Judgment stays at 7 | 1x |
-| 41.8 to 46.8 s | Judgment wins. The signal shoots up to the brain... | The winner's axon lane lights toward the brain | 1x |
-| 46.8 to 52.8 s | ...and triggers the prefrontal cortex | The prefrontal region lights | 1x |
-| 52.8 to 57.8 s | REDSTONE CORTEX | Hero pull-back from the same run, prefrontal still lit | 1x |
+| 28 to 36.8 s | Redstone comparators measure each region's signal (small: The strongest signal wins) | The 8 comparator rails race under floating lamp-count tags: all 0, then Memory 3, Judgment 7, Vision 3; Memory drops to 0, then Vision; Judgment stays at 7 | 1x |
+| 36.8 to 41.8 s | Judgment wins. The signal shoots up to the brain... | The winner's axon lane lights toward the brain | 1x |
+| 41.8 to 47.8 s | ...and triggers the prefrontal cortex | The prefrontal region lights | 1x |
+| 47.8 to 52.8 s | REDSTONE CORTEX | Hero pull-back from the same run, prefrontal still lit | 1x |
 
-All shots from 4.5 s to the end are one continuous run, fight take 3 in [video_link_take.txt](video_link_take.txt) (RUN at 07:52:43, neuron done at 07:55:14 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual), so the change to 0110 is visible. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6. Take 3 was filmed after the prefrontal got denser lamps (dust on every plate row: 25.9% of its surface lights instead of 12.9%; anatomy check 8/8 regions, P99 at most 23.6 ms).
+All shots from 4.5 s to the end are one continuous run, fight take 3 in [video_link_take.txt](video_link_take.txt) (RUN at 07:52:43, neuron done at 07:55:14 with output 6, winner Prefrontal, outputs o = [6,0,0,0,0,2,2,0]). The player's walking, typing and button press were sent to the game client as keyboard input by `video/film_demo.py`; the recording player then teleported to the neuron and back. The sky was set to noon at the neuron and midnight at the brain, and weather was cleared. Before the take the neuron's output lamps were reset to 0000 by a real rainbow question (Visual). The shot of the output lamps changing to 0110 was cut from the edit: four lamps changing meant nothing to a viewer without context. Fight take 1 (06:13) gave the same result but its race tags were too small to read (scale 0.9); take 2 used scale 2.6. Take 3 was filmed after the prefrontal got denser lamps (dust on every plate row: 25.9% of its surface lights instead of 12.9%; anatomy check 8/8 regions, P99 at most 23.6 ms).
 
 ## X post
 
