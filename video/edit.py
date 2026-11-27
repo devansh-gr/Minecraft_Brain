@@ -25,8 +25,8 @@ EDL = [
     ("link", "l_flyover", 1.0, 5.5, "and decides which part of the brain it triggers", ""),
     ("link", "l_lapse", 0.5, 3.5, "Thinking...", ""),
     ("link", "l_decide", 0.5, 8.8, "Redstone comparators measure each region's signal", "The strongest signal wins"),
-    ("link", "l_axon", 0.0, 5.0, "Judgment wins. The signal shoots up to the brain...", ""),
-    ("link", "l_lands", 2.0, 6.0, "...and triggers the prefrontal cortex", "The part real brains use to judge things"),
+    ("link", "l_axon", 0.0, 5.0, "The winning signal goes to the brain...", "In this case: Judgment"),
+    ("link", "l_lands", 2.0, 6.0, "...and activates the appropriate part of the brain", ""),
     ("link", "l_hero", 0.5, 5.0, "REDSTONE CORTEX", "Built in vanilla Minecraft"),
 ]
 
