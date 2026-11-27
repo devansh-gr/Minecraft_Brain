@@ -8,3 +8,4 @@ backups/
 clienttest/
 server_hw/
 release/
+.rederive/
