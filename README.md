@@ -4,6 +4,8 @@
 
 A brain in vanilla Minecraft 26.3, and a neuron whose math runs entirely through physical redstone.
 
+Paper (2 pages, IEEE): [paper/redstone_cortex.pdf](paper/redstone_cortex.pdf), LaTeX source in [paper/](paper/).
+
 There are two builds in this repo, and they are connected: the redstone neuron is built into the brain world and computes one of the brain's neurons, its judgment detector (the unit that feeds the prefrontal cortex), on every question.
 
 ## 1. The physical redstone neuron (new)
